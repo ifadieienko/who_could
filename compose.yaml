@@ -1,0 +1,73 @@
+name: who-could
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-who-could-backend:local}
+    build: { context: ., dockerfile: docker/backend.Dockerfile }
+    restart: unless-stopped
+    env_file: ["${DEPLOYMENT_ENV:-/opt/who-could/config/deployment.env}"]
+    environment:
+      WHO_COULD_ENV: production
+      WHO_COULD_SECRET_FILE: /run/secrets/app_secret
+      DATABASE_PASSWORD_FILE: ${DATABASE_PASSWORD_CONTAINER_FILE:-/run/secrets/mariadb_local_password}
+    secrets: [app_secret]
+    volumes:
+      - "${DATABASE_SSL_CA_FILE:-/opt/who-could/config/database-ca.pem}:/run/config/database-ca.pem:ro"
+    group_add: ["${SECRETS_GID:-10001}"]
+    expose: ["8000"]
+    networks: [frontend_network, database_network]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: ${BACKEND_MEMORY_LIMIT:-512m}
+    cpus: ${BACKEND_CPU_LIMIT:-1.0}
+    pids_limit: ${BACKEND_PIDS_LIMIT:-256}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging: &logging { driver: json-file, options: { max-size: 10m, max-file: "5" } }
+  web:
+    image: ${WEB_IMAGE:-who-could-web:local}
+    build: { context: ., dockerfile: docker/web.Dockerfile, args: { VITE_API_URL: /api } }
+    restart: unless-stopped
+    depends_on: { backend: { condition: service_healthy } }
+    ports: ["${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:8080"]
+    volumes:
+      - "${NGINX_SITE_CONFIG:-/opt/who-could/config/site.conf}:/etc/nginx/conf.d/default.conf:ro"
+      - "${CERTS_DIR:-/opt/who-could/certs}:/etc/letsencrypt:ro"
+      - "${ACME_WEBROOT:-/opt/who-could/state/acme}:/var/www/certbot:ro"
+    networks: [edge_network, frontend_network]
+    group_add: ["${TLS_READER_GID:-10002}"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp, /var/cache/nginx]
+    mem_limit: ${WEB_MEMORY_LIMIT:-256m}
+    cpus: ${WEB_CPU_LIMIT:-0.5}
+    pids_limit: ${WEB_PIDS_LIMIT:-128}
+    healthcheck: { test: [CMD, wget, -qO-, http://127.0.0.1:8080/healthz], interval: 10s, timeout: 5s, retries: 12 }
+    logging: *logging
+  certbot:
+    image: certbot/certbot:v5.1.0@sha256:bb72eb98a32ecc5dcef8eeeb8fb6a2a8c50d4d93e2a2c3542f8cb679840c990c
+    profiles: [acme]
+    volumes:
+      - "${CERTS_DIR:-/opt/who-could/certs}:/etc/letsencrypt"
+      - "${ACME_WEBROOT:-/opt/who-could/state/acme}:/var/www/certbot"
+    networks: [edge_network]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp, /var/lib/letsencrypt, /var/log/letsencrypt]
+    mem_limit: ${CERTBOT_MEMORY_LIMIT:-256m}
+    cpus: ${CERTBOT_CPU_LIMIT:-0.5}
+    pids_limit: ${CERTBOT_PIDS_LIMIT:-128}
+networks:
+  edge_network: {}
+  frontend_network: { internal: true }
+  database_network: { internal: true }
+secrets:
+  app_secret: { file: "${APP_SECRET_FILE:-/opt/who-could/secrets/app_secret}" }
+  mariadb_local_password: { file: "${MARIADB_LOCAL_PASSWORD_FILE:-/opt/who-could/secrets/mariadb_local_password}" }
+  external_database_password: { file: "${EXTERNAL_DATABASE_PASSWORD_FILE:-/opt/who-could/secrets/external_database_password}" }

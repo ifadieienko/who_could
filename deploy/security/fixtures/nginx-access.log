@@ -1,0 +1,2 @@
+192.0.2.10 - - [29/Aug/2026:12:00:00 +0000] "GET /login HTTP/1.1" 200 1234 "-" "Mozilla/5.0 security-fixture"
+198.51.100.20 - - [29/Aug/2026:12:00:01 +0000] "POST /api/auth/login HTTP/1.1" 401 42 "https://example.test/login" "curl/8.0"

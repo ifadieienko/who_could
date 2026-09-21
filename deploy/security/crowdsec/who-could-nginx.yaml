@@ -1,0 +1,6 @@
+# Installed as /etc/crowdsec/acquis.d/who-could-nginx.yaml by server.sh.
+source: docker
+container_name_regexp:
+  - '(^|/)[A-Za-z0-9_.-]*who-could[A-Za-z0-9_.-]*[-_]web[-_][0-9]+$'
+labels:
+  type: nginx

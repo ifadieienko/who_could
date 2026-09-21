@@ -1,0 +1,129 @@
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(280px, 0.8fr) minmax(420px, 1.6fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-create-card,
+.admin-users-card {
+  min-width: 0;
+}
+
+.admin-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-heading h2 {
+  margin: 0;
+}
+
+.admin-heading > strong {
+  color: var(--teal);
+  font-size: 28px;
+}
+
+.admin-form {
+  display: grid;
+  gap: 14px;
+}
+
+.role-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.role-picker > strong {
+  width: 100%;
+  font-size: 13px;
+}
+
+.role-picker.compact {
+  margin-top: 8px;
+}
+
+.role-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #fffefa;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.role-check input {
+  width: auto;
+  min-height: auto;
+  margin: 0;
+}
+
+.role-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admin-user-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+}
+
+.admin-user-meta {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-user-meta small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1280px) {
+  .admin-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-users-card {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users-card {
+    grid-column: auto;
+  }
+
+  .admin-user-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

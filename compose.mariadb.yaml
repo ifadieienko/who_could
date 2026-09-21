@@ -1,0 +1,26 @@
+services:
+  backend:
+    depends_on: { mariadb: { condition: service_healthy } }
+    secrets: [mariadb_local_password]
+  mariadb:
+    image: mariadb:11.4.13-noble@sha256:611a2fcc5fa7c6ceb8644c6f74b25ede004ff6c3a6b38c8f8c23d3bbf6c26430
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DATABASE_NAME:-who_could}
+      MARIADB_USER: ${DATABASE_USER:-who_could}
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_local_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
+    secrets: [mariadb_local_password, mariadb_root_password]
+    group_add: ["${SECRETS_GID:-10001}"]
+    expose: ["3306"]
+    volumes: [mariadb_data:/var/lib/mysql]
+    networks: [database_network]
+    mem_limit: ${DATABASE_MEMORY_LIMIT:-1g}
+    cpus: ${DATABASE_CPU_LIMIT:-2.0}
+    pids_limit: ${DATABASE_PIDS_LIMIT:-512}
+    security_opt: [no-new-privileges:true]
+    healthcheck: { test: [CMD, healthcheck.sh, --connect, --innodb_initialized], interval: 5s, timeout: 5s, retries: 30 }
+    logging: { driver: json-file, options: { max-size: 10m, max-file: "5" } }
+secrets:
+  mariadb_root_password: { file: "${MARIADB_ROOT_PASSWORD_FILE:-/opt/who-could/secrets/mariadb_root_password}" }
+volumes: { mariadb_data: {} }

@@ -1,0 +1,9 @@
+# External database mode adds no database container. The application's normal
+# frontend/database networks are internal; only this overlay grants backend
+# egress so it can reach the operator-managed database endpoint.
+services:
+  backend:
+    secrets: [external_database_password]
+    networks: [frontend_network, database_network, egress_network]
+networks:
+  egress_network: {}

@@ -1,0 +1,7 @@
+# Fallback when /var/log/auth.log is unavailable on a systemd host.
+source: journalctl
+journalctl_filter:
+  - '_SYSTEMD_UNIT=ssh.service'
+  - '_SYSTEMD_UNIT=sshd.service'
+labels:
+  type: syslog

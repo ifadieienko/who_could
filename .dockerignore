@@ -1,0 +1,15 @@
+.git
+.github
+**/.env
+backend/.venv
+backend/data
+**/*.db
+**/*.db-wal
+**/*.db-shm
+frontend/node_modules
+frontend/dist
+**/__pycache__
+**/.pytest_cache
+backups
+.idea
+.vscode

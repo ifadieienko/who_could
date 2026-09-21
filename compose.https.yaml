@@ -1,0 +1,3 @@
+services:
+  web:
+    ports: ["${BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:8443"]

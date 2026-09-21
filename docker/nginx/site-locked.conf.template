@@ -1,0 +1,12 @@
+# Fail-closed edge used while ACME or requested host security is incomplete.
+# It intentionally exposes only health and HTTP-01 challenge material.
+server {
+  listen 8080;
+  server_name __HOSTNAME__;
+  if ($host != "__HOSTNAME__") { return 421; }
+  add_header X-Content-Type-Options nosniff always;
+  add_header Cache-Control "no-store" always;
+  location = /healthz { access_log off; return 200 "locked\n"; add_header Content-Type text/plain; }
+  location ^~ /.well-known/acme-challenge/ { root /var/www/certbot; }
+  location / { add_header Retry-After 60 always; return 503; }
+}

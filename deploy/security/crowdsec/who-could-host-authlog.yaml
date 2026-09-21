@@ -1,0 +1,5 @@
+# Installed when the Debian/Ubuntu authentication log is readable.
+filenames:
+  - /var/log/auth.log
+labels:
+  type: syslog

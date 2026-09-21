@@ -155,9 +155,9 @@ compose_files() {
 dc() {
   compose_files
   if [[ -n "${RUNTIME_BACKEND_IMAGE:-}" ]]; then
-    DEPLOYMENT_ENV="$CONFIG_FILE" BACKEND_IMAGE="$RUNTIME_BACKEND_IMAGE" WEB_IMAGE="$RUNTIME_WEB_IMAGE" NGINX_SITE_CONFIG="$RUNTIME_NGINX_CONFIG" docker_cmd compose --env-file "$CONFIG_FILE" "${COMPOSE_ARGS[@]}" "$@"
+    APP_SETTINGS_ENV="${APP_SETTINGS_ENV:-$STATE_DIR/config/workshop.env}" DEPLOYMENT_ENV="$CONFIG_FILE" BACKEND_IMAGE="$RUNTIME_BACKEND_IMAGE" WEB_IMAGE="$RUNTIME_WEB_IMAGE" NGINX_SITE_CONFIG="$RUNTIME_NGINX_CONFIG" docker_cmd compose --env-file "$CONFIG_FILE" "${COMPOSE_ARGS[@]}" "$@"
   else
-    DEPLOYMENT_ENV="$CONFIG_FILE" docker_cmd compose --env-file "$CONFIG_FILE" "${COMPOSE_ARGS[@]}" "$@"
+    APP_SETTINGS_ENV="${APP_SETTINGS_ENV:-$STATE_DIR/config/workshop.env}" DEPLOYMENT_ENV="$CONFIG_FILE" docker_cmd compose --env-file "$CONFIG_FILE" "${COMPOSE_ARGS[@]}" "$@"
   fi
 }
 install_docker() {
@@ -180,7 +180,10 @@ install_docker() {
 check_docker() {
   command -v docker >/dev/null || install_docker
   docker_cmd version >/dev/null
-  docker_cmd compose version >/dev/null
+  local compose_version
+  compose_version=$(docker_cmd compose version --short)
+  compose_version=${compose_version#v}
+  [[ "$(printf '%s\n' 2.24.0 "$compose_version" | sort -V | head -1)" == 2.24.0 ]] || die 'Docker Compose >= 2.24 is required'
 }
 prepare_dirs() {
   [[ -w "$(dirname "$STATE_DIR")" || -d "$STATE_DIR" ]] || die "Run as root (recommended: sudo ./server.sh install)"
@@ -555,7 +558,12 @@ backup() {
   # Variables intentionally expand in the container shell, not on the host.
   # shellcheck disable=SC2016
   dc exec -T mariadb sh -ceu 'f=$(mktemp); trap '\''rm -f "$f"'\'' EXIT; umask 077; printf "[client]\npassword=%s\n" "$(cat /run/secrets/mariadb_local_password)" > "$f"; mariadb-dump --defaults-extra-file="$f" --single-transaction -u "$MARIADB_USER" "$MARIADB_DATABASE"' > "$out"
-  chmod 0600 "$out"; backup_export "$out"; info "Backup created: $out"
+  mkdir -p "$out.assets"
+  chmod 0700 "$out.assets"
+  # Old releases keep photos in SQL and have no attachment volume yet.
+  dc run --rm --no-deps backend python -c 'import importlib.util,runpy,sys,tarfile; sys.argv=["backup_uploads","export"]; runpy.run_module("app.backup_uploads",run_name="__main__") if importlib.util.find_spec("app.backup_uploads") else tarfile.open(fileobj=sys.stdout.buffer,mode="w|").close()' > "$out.assets/uploads.tar"
+  chmod 0600 "$out.assets/uploads.tar"
+  chmod 0600 "$out"; backup_export "$out"; info "Backup created: $out (copy companion $out.assets as well)"
 }
 native_restore() {
   local mode=$1 file=$2
@@ -595,6 +603,9 @@ restore() {
   emergency=$(find "$STATE_DIR/backups" -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
   dc stop backend
   native_restore "$mode" "$file" || recover_restore "$mode" "$emergency"
+  if [[ -f "$file.assets/uploads.tar" ]]; then
+    dc run --rm --no-deps backend python -m app.backup_uploads restore < "$file.assets/uploads.tar" || recover_restore "$mode" "$emergency"
+  fi
   dc run --rm --no-deps backend alembic upgrade head || recover_restore "$mode" "$emergency"
   dc run --rm --no-deps backend alembic check || recover_restore "$mode" "$emergency"
   dc up -d --wait backend web || recover_restore "$mode" "$emergency"
@@ -618,7 +629,7 @@ cert_renew() { [[ "$(cfg HTTPS_MODE)" == acme ]] || die "ACME is not configured"
 usage() { cat <<'EOF'
 Usage: ./server.sh COMMAND [options]
 Commands: install, configure, start, stop, restart, status, logs [service],
-          health, doctor, backup, restore FILE, rotate-db-password, cert-renew,
+          health, doctor, mail, backup, restore FILE, rotate-db-password, cert-renew,
           uninstall, update [--check] [--ref REF] [--external-db-backup-confirmed],
           rollback [RELEASE] [--restore-database], releases,
           security-install, security-status, security-test, security-remove
@@ -649,7 +660,7 @@ main() {
   start) dc up -d --wait; health;; stop) dc down;; restart) dc restart; health;;
   status) info "Who could — service status"; release_diagnostics; dc ps;;
   logs) service=${1:-}; if [[ "$service" == database ]]; then if [[ "$(cfg DATABASE_MODE)" == mariadb-local ]]; then service=mariadb; else die "External MariaDB has no local database service logs"; fi; fi; if [[ -n "$service" ]]; then dc logs --tail=200 "$service"; else dc logs --tail=200; fi;;
-  health) health;; doctor) doctor;; backup) backup;; restore) restore "${1:-}";; rotate-db-password) rotate_local_database_password;; cert-renew) cert_renew;;
+  health) health;; doctor) doctor;; backup) backup;; mail) dc exec -T backend python -m app.mail_worker --once;; restore) restore "${1:-}";; rotate-db-password) rotate_local_database_password;; cert-renew) cert_renew;;
   update) update_command "$@";; rollback) rollback_command "$@";; releases) releases_command;;
   security-install) security_set_config HOST_SECURITY_REQUESTED true; security_install;; security-status) security_status;; security-test) security_test;; security-remove) security_remove; security_set_config HOST_SECURITY_REQUESTED false;;
   uninstall) dc down; remove_timer; info "Containers removed. Data and configuration preserved in $STATE_DIR";;

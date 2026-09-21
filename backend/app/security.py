@@ -43,7 +43,7 @@ def _unb64url(data: str) -> bytes:
 
 def create_token(user_id: int) -> str:
     now = int(time.time())
-    payload = {"sub": user_id, "iat": now, "exp": now + TOKEN_TTL_SECONDS}
+    payload = {"sub": user_id, "iat": now, "exp": now + TOKEN_TTL_SECONDS, "nonce": secrets.token_urlsafe(24)}
     body = _b64url(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signature = hmac.new(SECRET.encode("utf-8"), body.encode("ascii"), hashlib.sha256).digest()
     return f"{body}.{_b64url(signature)}"

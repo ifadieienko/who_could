@@ -63,7 +63,7 @@ def load_settings() -> Settings:
         raise RuntimeError("Only MariaDB is supported")
 
     if explicit:
-        url: str | URL = _require_mariadb(explicit)
+        url: str | URL = explicit if environment == "test" and make_url(explicit).get_backend_name() == "sqlite" else _require_mariadb(explicit)
     else:
         password = _file_or_value("DATABASE_PASSWORD")
         if not password:

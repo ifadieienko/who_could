@@ -1,6 +1,7 @@
 import { session } from './session';
+import { getWorkshop } from './repair-api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export class ApiError extends Error {
   constructor(message, status) { super(message); this.status = status; }
@@ -10,7 +11,7 @@ async function request(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+    headers: { 'X-Workshop-Id': String(getWorkshop()), 'Content-Type': 'application/json', ...(options.headers || {}) }
   });
   const text = await response.text();
   let data = null;

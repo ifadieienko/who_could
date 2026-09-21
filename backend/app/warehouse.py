@@ -128,7 +128,7 @@ def _load_table(session, table_id: int, owner_id: int, include_rows: bool = True
     return session.scalar(
         select(WarehouseTable)
         .options(*options)
-        .where(WarehouseTable.id == table_id, WarehouseTable.owner_id == owner_id)
+        .where(WarehouseTable.id == table_id, WarehouseTable.workshop_id == owner_id)
     )
 
 
@@ -233,7 +233,7 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
             tables = list(session.scalars(
                 select(WarehouseTable)
                 .options(selectinload(WarehouseTable.columns))
-                .where(WarehouseTable.owner_id == user["id"])
+                .where(WarehouseTable.workshop_id == user["workshop_id"])
                 .order_by(WarehouseTable.created_at.desc(), WarehouseTable.id.desc())
             ).all())
             counts: dict[int, int] = {}
@@ -260,20 +260,20 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
     @router.post("/tables", response_model=WarehouseTablePublic, status_code=201)
     def create_table(payload: WarehouseTableCreate, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = WarehouseTable(owner_id=user["id"], name=payload.name)
+            table = WarehouseTable(owner_id=user["id"], workshop_id=user["workshop_id"], name=payload.name)
             table.columns = [
                 WarehouseColumn(name=column.name, field_type=column.field_type.value, position=index)
                 for index, column in enumerate(payload.columns)
             ]
             session.add(table)
             session.flush()
-            table = _load_table(session, table.id, user["id"])
+            table = _load_table(session, table.id, user["workshop_id"])
             return _table_public(table)
 
     @router.get("/tables/{table_id}", response_model=WarehouseTablePublic)
     def get_table(table_id: int, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = _load_table(session, table_id, user["id"])
+            table = _load_table(session, table_id, user["workshop_id"])
             if not table:
                 raise HTTPException(404, "Warehouse table not found")
             return _table_public(table)
@@ -281,7 +281,7 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
     @router.delete("/tables/{table_id}", status_code=204)
     def delete_table(table_id: int, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = _load_table(session, table_id, user["id"], include_rows=False)
+            table = _load_table(session, table_id, user["workshop_id"], include_rows=False)
             if not table:
                 raise HTTPException(404, "Warehouse table not found")
             session.delete(table)
@@ -290,7 +290,7 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
     @router.post("/tables/{table_id}/rows", response_model=WarehouseRowPublic, status_code=201)
     def create_row(table_id: int, payload: WarehouseRowCreate, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = _load_table(session, table_id, user["id"], include_rows=False)
+            table = _load_table(session, table_id, user["workshop_id"], include_rows=False)
             if not table:
                 raise HTTPException(404, "Warehouse table not found")
             row = WarehouseRow(table_id=table.id, payload=_normalize_values(list(table.columns), payload.values))
@@ -301,7 +301,7 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
     @router.put("/tables/{table_id}/rows/{row_id}", response_model=WarehouseRowPublic)
     def update_row(table_id: int, row_id: int, payload: WarehouseRowCreate, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = _load_table(session, table_id, user["id"], include_rows=False)
+            table = _load_table(session, table_id, user["workshop_id"], include_rows=False)
             if not table:
                 raise HTTPException(404, "Warehouse table not found")
             row = session.scalar(select(WarehouseRow).where(WarehouseRow.id == row_id, WarehouseRow.table_id == table.id))
@@ -314,7 +314,7 @@ def build_warehouse_router(current_user: Callable) -> APIRouter:
     @router.delete("/tables/{table_id}/rows/{row_id}", status_code=204)
     def delete_row(table_id: int, row_id: int, user: Annotated[dict, Depends(current_user)]):
         with db() as session:
-            table = _load_table(session, table_id, user["id"], include_rows=False)
+            table = _load_table(session, table_id, user["workshop_id"], include_rows=False)
             if not table:
                 raise HTTPException(404, "Warehouse table not found")
             row = session.scalar(select(WarehouseRow).where(WarehouseRow.id == row_id, WarehouseRow.table_id == table.id))

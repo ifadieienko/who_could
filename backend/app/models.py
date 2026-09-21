@@ -93,6 +93,7 @@ class DeviceIntakeOrder(Base):
 
 class WarehouseTable(Base):
     __tablename__ = "warehouse_tables"
+    workshop_id: Mapped[int | None] = mapped_column(ForeignKey("workshops.id"), nullable=True, index=True)
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(120))

@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=app:app backend/app ./app
 COPY --chown=app:app backend/migrations ./migrations
 COPY --chown=app:app backend/alembic.ini ./alembic.ini
+RUN mkdir -p /app/uploads && chown 10001:10001 /app/uploads
 USER 10001:10001
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

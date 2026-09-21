@@ -28,7 +28,7 @@ def load(s, token, lock=False):
         else s.get(RepairOrder, q.order_id)
     )
     if lock:
-        s.refresh(q)
+        s.refresh(q, with_for_update=True)
     if q.expires_at < utc() or q.status == "superseded":
         raise HTTPException(410, "Ссылка истекла или смета заменена")
     latest = s.scalar(
@@ -36,6 +36,7 @@ def load(s, token, lock=False):
         .where(Estimate.order_id == o.id)
         .order_by(Estimate.revision.desc())
         .limit(1)
+        .with_for_update()
     )
     if latest != q.id:
         raise HTTPException(410, "Смета заменена новой версией")

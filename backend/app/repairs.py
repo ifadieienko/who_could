@@ -436,10 +436,14 @@ def template_version(id: int, a=Depends(access)):
         s.scalar(select(Workshop).where(Workshop.id == a.workshop_id).with_for_update())
         revision = (
             s.scalar(
-                select(func.max(FormTemplate.revision)).where(
+                select(FormTemplate.revision)
+                .where(
                     FormTemplate.workshop_id == a.workshop_id,
                     FormTemplate.family == t.family,
                 )
+                .order_by(FormTemplate.revision.desc())
+                .limit(1)
+                .with_for_update()
             )
             or 0
         ) + 1
@@ -518,9 +522,13 @@ def workflow_version(id: int, p: WorkflowInput, a=Depends(access)):
         s.scalar(select(Workshop).where(Workshop.id == a.workshop_id).with_for_update())
         revision = (
             s.scalar(
-                select(func.max(Workflow.revision)).where(
+                select(Workflow.revision)
+                .where(
                     Workflow.workshop_id == a.workshop_id, Workflow.family == old.family
                 )
+                .order_by(Workflow.revision.desc())
+                .limit(1)
+                .with_for_update()
             )
             or 0
         ) + 1

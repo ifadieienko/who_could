@@ -693,6 +693,60 @@ class WorkshopTest(unittest.TestCase):
         ), patch("app.mail_worker.smtplib.SMTP"):
             self.assertEqual(deliver_once(), len(messages))
 
+    @unittest.skipUnless(engine.dialect.name == "mariadb", "Requires MariaDB row locks")
+    def test_concurrent_customer_decision(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+
+        order, token = self.quote(self.order(draft=False))
+        barrier = Barrier(2)
+
+        def decide():
+            client = TestClient(app)
+            barrier.wait(timeout=10)
+            return client.post(
+                "/public/quotes/" + token,
+                json={"decision": "accepted", "name": "Customer", "confirmed": True},
+            ).status_code
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda _: decide(), range(2)))
+        self.assertEqual(sorted(results), [200, 409])
+
+    def test_attachment_backup_roundtrip_and_traversal_rejection(self):
+        import subprocess, sys, tarfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            full = root / ("a" * 32 + ".jpg")
+            thumb = root / ("a" * 32 + ".thumb.jpg")
+            full.write_bytes(b"full-image")
+            thumb.write_bytes(b"thumbnail")
+            env = {**os.environ, "UPLOAD_DIR": directory}
+
+            def run(mode, body=None):
+                return subprocess.run(
+                    [sys.executable, "-m", "app.backup_uploads", mode],
+                    input=body,
+                    env=env,
+                    cwd=ROOT,
+                    capture_output=True,
+                )
+
+            archive = run("export")
+            self.assertEqual(archive.returncode, 0, archive.stderr)
+            full.unlink()
+            thumb.unlink()
+            self.assertEqual(run("restore", archive.stdout).returncode, 0)
+            self.assertEqual(full.read_bytes(), b"full-image")
+            self.assertEqual(thumb.read_bytes(), b"thumbnail")
+            bad = io.BytesIO()
+            with tarfile.open(fileobj=bad, mode="w") as tar:
+                entry = tarfile.TarInfo("../escape.jpg")
+                entry.size = 1
+                tar.addfile(entry, io.BytesIO(b"x"))
+            self.assertNotEqual(run("restore", bad.getvalue()).returncode, 0)
+
     def test_schema_matches(self):
         command.check(config())
 

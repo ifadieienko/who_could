@@ -47,7 +47,10 @@ jobs:
         run: |
           python deploy/test_compose_security.py
           bash deploy/test_update_static.sh
-          bash deploy/test_security_static.sh
+          # This fixture retains the production root guard; service/firewall
+          # commands are mocked and all managed paths point into a temp dir.
+          sudo git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          sudo bash deploy/test_security_static.sh
           bash deploy/test_compose_modes.sh
           bash -n server.sh
   browser:

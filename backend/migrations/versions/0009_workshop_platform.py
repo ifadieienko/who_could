@@ -497,6 +497,24 @@ def upgrade():
 def migrate_legacy(bind):
     meta = sa.MetaData()
     meta.reflect(bind=bind)
+    # MariaDB exposes JSON as LONGTEXT in reflection on some driver versions.
+    # Restore bind processors for newly inserted structured values explicitly.
+    for table_name, names in {
+        "workshop_roles": ("permissions",),
+        "repair_templates": ("fields", "layout"),
+        "repair_workflows": ("stages",),
+        "repair_orders": (
+            "template_snapshot",
+            "intake_snapshot",
+            "values",
+            "workflow_snapshot",
+            "checks",
+            "receipt",
+        ),
+        "repair_events": ("data",),
+    }.items():
+        for name in names:
+            meta.tables[table_name].c[name].type = sa.JSON()
 
     def rows(name):
         return bind.execute(sa.select(meta.tables[name])).mappings().all()

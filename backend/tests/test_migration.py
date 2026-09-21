@@ -71,7 +71,10 @@ class LegacyMigrationTest(unittest.TestCase):
                 **os.environ,
                 "WHO_COULD_ENV": "test",
                 "WHO_COULD_SECRET": "migration-tests-only-secret-at-least-32",
-                "DATABASE_URL": "sqlite:///" + directory + "/legacy.db",
+                "DATABASE_URL": os.environ.get(
+                    "MIGRATION_TEST_DATABASE_URL",
+                    "sqlite:///" + directory + "/legacy.db",
+                ),
                 "UPLOAD_DIR": directory + "/uploads",
             }
             result = subprocess.run(

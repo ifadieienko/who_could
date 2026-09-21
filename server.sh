@@ -629,7 +629,7 @@ cert_renew() { [[ "$(cfg HTTPS_MODE)" == acme ]] || die "ACME is not configured"
 usage() { cat <<'EOF'
 Usage: ./server.sh COMMAND [options]
 Commands: install, configure, start, stop, restart, status, logs [service],
-          health, doctor, backup, restore FILE, rotate-db-password, cert-renew,
+          health, doctor, mail, backup, restore FILE, rotate-db-password, cert-renew,
           uninstall, update [--check] [--ref REF] [--external-db-backup-confirmed],
           rollback [RELEASE] [--restore-database], releases,
           security-install, security-status, security-test, security-remove

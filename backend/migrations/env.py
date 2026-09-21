@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from app.config import settings
 from app.database_engine import create_database_engine
 from app.models import Base
+from app import repair_models
 from app import service_models  # noqa: F401 - registers service tables in Base.metadata
 
 config = context.config

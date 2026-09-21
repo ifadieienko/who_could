@@ -87,7 +87,7 @@ run_check "backend and web healthy (mariadb)" compose up -d --wait backend web
 run_check "nginx config (mariadb)" compose exec -T web nginx -t
 run_check "frontend HTTP (mariadb)" curl --retry 10 --retry-connrefused -fsS http://127.0.0.1:18080/ -o /dev/null
 run_check "API health (mariadb)" curl -fsS http://127.0.0.1:18080/api/health -o /dev/null
-run_check "register user (mariadb)" curl -fsS -X POST -H 'Content-Type: application/json' --data '{"name":"Backup Test","email":"backup@example.com","password":"safe-password-123","city":null,"bio":null,"skills":null}' http://127.0.0.1:18080/api/auth/register -o /dev/null
+run_check "register user (mariadb)" curl -fsS -X POST -H 'Content-Type: application/json' --data '{"name":"Backup Test","email":"backup@example.com","password":"safe-password-123","workshop":"Backup workshop"}' http://127.0.0.1:18080/api/auth/register -o /dev/null
 
 container_port_unpublished() {
   local service=$1 port=$2 container
@@ -122,8 +122,8 @@ run_check "secret values absent from inspect (mariadb)" check_inspect_leaks
 backup_restore() {
   sudo --preserve-env=WHO_COULD_STATE_DIR,COMPOSE_PROJECT_NAME "$ROOT/server.sh" backup
   local backup
-  backup=$(find "$STATE/backups" -type f | sort | tail -1)
-  compose exec -T backend python -c 'from app.database import engine; from app.models import User; from sqlalchemy import delete; c=engine.connect(); t=c.begin(); c.execute(delete(User).where(User.email == "backup@example.com")); t.commit(); c.close()'
+  backup=$(find "$STATE/backups" -maxdepth 1 -type f | sort | tail -1)
+  compose exec -T backend python -c 'from app.database import engine; from app.models import User; from sqlalchemy import update; c=engine.connect(); t=c.begin(); c.execute(update(User).where(User.email == "backup@example.com").values(password_hash="invalidated-for-restore-test")); t.commit(); c.close()'
   [[ "$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"email":"backup@example.com","password":"safe-password-123"}' http://127.0.0.1:18080/api/auth/login)" == 401 ]]
   printf 'RESTORE\n' | sudo --preserve-env=WHO_COULD_STATE_DIR,COMPOSE_PROJECT_NAME "$ROOT/server.sh" restore "$backup"
   curl -fsS -X POST -H 'Content-Type: application/json' --data '{"email":"backup@example.com","password":"safe-password-123"}' http://127.0.0.1:18080/api/auth/login -o /dev/null

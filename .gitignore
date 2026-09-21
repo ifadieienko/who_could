@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+**/.venv/
+**/node_modules/
+**/dist/
+**/__pycache__/
+*.py[cod]
+*.db
+**/uploads/
+**/playwright-report/
+**/test-results/
+
+frontend/test-results/
+frontend/playwright-report/
+test-results/

@@ -8,3 +8,6 @@ alembic==1.16.5
 PyMySQL==1.1.2
 python-barcode==0.16.1
 qrcode==8.2
+python-multipart==0.0.32
+Pillow==12.3.0
+httpx==0.28.1

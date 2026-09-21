@@ -27,7 +27,7 @@ certbot_block = base.split("  certbot:", 1)[1].split("\nnetworks:\n", 1)[0]
 # the credential required by the selected MariaDB mode.
 assert "secrets: [app_secret]" in backend_block
 assert not re.search(r"^\s*secrets:\s*\[[^\]]*(mariadb_local_password|external_database_password)", backend_block, re.MULTILINE)
-assert "networks: [frontend_network, database_network]" in backend_block
+assert "networks: [frontend_network, database_network, egress_network]" in backend_block
 assert "edge_network" not in backend_block
 assert "networks: [edge_network, frontend_network]" in web_block
 assert "networks: [edge_network]" in certbot_block

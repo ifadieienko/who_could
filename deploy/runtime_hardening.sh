@@ -62,6 +62,10 @@ backup_export() {
   [[ "$target" != "$STATE_DIR" && "$target" != "$STATE_DIR/"* ]] || die "BACKUP_EXPORT_DIR must be outside the local deployment state"
   [[ -d "$target" && -w "$target" ]] || die "BACKUP_EXPORT_DIR must be an existing writable mounted directory"
   install -m 0600 "$file" "$target/${file##*/}"
+  if [[ -f "$file.assets/uploads.tar" ]]; then
+    install -d -m 0700 "$target/${file##*/}.assets"
+    install -m 0600 "$file.assets/uploads.tar" "$target/${file##*/}.assets/uploads.tar"
+  fi
   info "Backup exported: $target/${file##*/}"
 }
 

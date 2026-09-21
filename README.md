@@ -1,97 +1,55 @@
-# Who could — локальный MVP фриланс-биржи
+# Who Could — рабочее место ремонтной мастерской
 
-Приложение на **FastAPI + SQLAlchemy + React/Vite**, где один аккаунт может публиковать задачи и откликаться на чужие.
+FastAPI, SQLAlchemy, MariaDB и React/Vite. Подписочный сервис для приёма техники, ремонта, согласования стоимости и выдачи. Предыдущий интерфейс биржи заменён интерфейсом мастерской; старые таблицы сохраняются для миграции и аудита.
 
-## Требования и установка
+## Возможности
 
-Нужны Python **3.10+** (с модулем `venv`) и совместимый с Vite 8 Node.js **20.19+ или 22.12+** (рекомендуется LTS 22) с npm.
+- Изолированные мастерские, сотрудники и настраиваемые роли. Область доступа — вся мастерская либо назначенные сотруднику и свободные заказы. Сотрудника можно отключить без удаления истории.
+- Версионные формы: текст, число, дата, фото, список, checkbox; разделы, 1–3 колонки, ширина и номер строки, обязательность, условная видимость и права на поля. На телефоне — одна колонка. Опубликованная форма неизменяема; заказ хранит собственный снимок.
+- Процессы ремонта: свои этапы и разрешённые переходы, обязательные поля и проверки, согласованная смета, права перехода и срок этапа. Новая версия применяется к новым заказам.
+- Приёмка с фотографиями состояния/комплектности, исполнитель, полка, обещанный срок, поиск и очередь задержанных заказов. Файлы хранятся отдельно от базы; доступны только через проверку прав.
+- QR-этикетка 62 × 40 мм открывает мобильную карточку после входа сотрудника. QR не содержит контактов или публичного доступа к заказу.
+- Версии смет и отдельная страница согласования клиентом; защищённая случайным токеном ссылка действует 7 дней. Решение привязано к версии и не принимается повторно.
+- Контроль качества, запись полученных оплат, акт выдачи, повторное открытие с причиной, связанный гарантийный заказ и история устройства. Оплаты мастерской учитываются в PLN, целыми грошами; это учёт поступления, не эквайринг или фискализация.
+- CSV-импорт клиентов/заказов с предварительной проверкой и защитой от повторов; ZIP-экспорт данных и фотографий. Экспорт доступен при истекшей подписке.
+- Stripe Checkout/Customer Portal и проверка подписанных webhook; email-очередь с повторными попытками; сброс пароля и отзыв сессий.
 
-```bash
-python3 install.py                 # Linux/macOS
-python install.py                  # Windows
-```
+## Локальный запуск
 
-Установщик проверяет реальные версии, создаёт `backend/.venv`, выполняет `npm ci`, инициализирует SQLite и создаёт уникальный `backend/.env`. Он не считает устаревший бинарник подходящим и сообщает, что именно требуется обновить.
-
-### Секрет подписи
-
-`WHO_COULD_SECRET` обязателен при обычном запуске и должен иметь не менее 32 символов. `install.py` безопасно генерирует его в игнорируемом Git файле `backend/.env`. Вручную:
-
-```bash
-cp backend/.env.example backend/.env
-python -c "import secrets; print(secrets.token_urlsafe(48))"  # вставьте результат в .env
-```
-
-Для одноразового локального запуска без `.env` допустим `WHO_COULD_ENV=development`: backend создаст случайный process-only секрет, и сессии пропадут после рестарта. Этот режим нельзя использовать при deployment.
-
-## Запуск
+Нужны Python 3.10+, Node.js 22.12+ и отдельная MariaDB 11.4. Создайте базу и пользователя с правами миграции на эту базу. SQLite разрешён только в тестах.
 
 ```bash
-./scripts/start-database.sh        # применить Alembic migrations
-./scripts/start-backend.sh         # http://127.0.0.1:8000, Swagger: /docs
-./scripts/start-frontend.sh        # http://127.0.0.1:5173
-# либо вместе: ./run-project.sh
+python3 install.py
 ```
 
-На Windows используйте одноимённые `.cmd` и `run-project.cmd`. Разрешённые CORS origins: `http://127.0.0.1:5173` и `http://localhost:5173`.
-
-## Проверки и CI
+При первом запуске установщик создаёт `backend/.env` с секретом и образцом настроек. Укажите `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, затем повторите команду. После установки:
 
 ```bash
-cd backend && alembic upgrade head && alembic check && python -m unittest discover -s tests
-cd frontend && npm ci && npm run build
+./run-project.sh
+# Windows: run-project.cmd
 ```
 
-GitHub Actions на каждый `push` и `pull_request` независимо запускает backend-тесты и production build frontend (`.github/workflows/ci.yml`). Тесты используют временную SQLite-БД и проверяют auth, авторизацию, валидацию, приватность dashboard и конечные переходы статусов.
+Frontend: `http://127.0.0.1:5173`; API: `http://127.0.0.1:8000/docs`. Vite проксирует `/api`, поэтому cookie и запросы имеют один origin. `PUBLIC_URL` должен указывать на адрес frontend; для проверки QR телефоном нужен доступный с телефона HTTPS-адрес. Новая регистрация создаёт отдельную мастерскую и владельца.
 
-## Правила статусов
-
-- задачи: `open → in_progress`, `open → closed`, `in_progress → closed`; неявного reopen нет;
-- отклики: `sent → accepted` или `sent → declined`, оба результата конечны;
-- принятие атомарно переводит задачу в работу и отклоняет остальные ожидающие отклики.
-
-## Границы MVP
-
-Bearer-токен в `localStorage` оставлены **только для локального MVP**. Клиент централизованно удаляет локальную сессию при `401`, но `localStorage` остаётся доступен JavaScript и не является production-хранилищем. Перед публичным deployment нужны HttpOnly Secure cookie/session architecture, CSRF-защита, production БД и миграции, rate limiting, восстановление аккаунта, аудит и модерация. Самодельная refresh-token система намеренно не добавлялась.
-
-
-## Базы данных и миграции
-
-Поддерживаются SQLite (локальный default), PostgreSQL и MariaDB. Схема управляется Alembic: `cd backend && alembic upgrade head`. Полный справочник переменных, TLS, pool и secret files: [docs/DATABASE_CONFIGURATION.md](docs/DATABASE_CONFIGURATION.md).
-
-## Server deployment
-
-Локальная разработка выше по-прежнему использует `install.py`. Для отдельного
-Ubuntu/Linux-сервера доступен Docker installer/manager:
+## Проверки
 
 ```bash
-sudo ./server.sh install
+cd backend
+python -m unittest discover -s tests -v
+cd ../frontend
+npm ci
+npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
 
-Он интерактивно выбирает SQLite, локальный/внешний PostgreSQL или MariaDB,
-создаёт file-backed secrets, применяет Alembic до запуска API и настраивает
-Nginx/HTTP/HTTPS. Архитектура, все команды, ограничения безопасности и операции
-описаны в [deploy/SERVER.md](deploy/SERVER.md), настройки — в
-[deploy/CONFIGURATION.md](deploy/CONFIGURATION.md), резервное копирование — в
-[deploy/BACKUP_RESTORE.md](deploy/BACKUP_RESTORE.md).
+API-тесты по умолчанию создают временную SQLite. Для MariaDB задайте `TEST_DATABASE_URL` **только на отдельную тестовую базу: тесты очищают её содержимое**. GitHub Actions запускает API-проверки на MariaDB 11.4, перенос заполненной старой базы на временной SQLite, сборку и браузерный цикл. Старые тесты снятого с эксплуатации API сохранены в `backend/tests_legacy`; они не относятся к контракту `/v2`.
 
-Safe release operations are documented in
-[deploy/UPDATE_ROLLBACK.md](deploy/UPDATE_ROLLBACK.md):
+## Обновление и эксплуатация
 
-```bash
-sudo ./server.sh update --check
-sudo ./server.sh update [--ref REF]
-sudo ./server.sh releases
-sudo ./server.sh rollback [RELEASE]
-```
+- [Переход на версию мастерской, ограничения и настройки](docs/WORKSHOP_RELEASE.md).
+- [Развёртывание на сервере](deploy/SERVER.md).
+- [Резервные копии базы и фотографий](deploy/BACKUP_RESTORE.md).
+- [Изменения по результатам ревью](CODE_REVIEW.md).
 
-Опциональный host-level слой CrowdSec (SSH/Linux и Docker Nginx acquisition,
-firewall bouncer, безопасная диагностика) устанавливается только явно:
-
-```bash
-sudo ./server.sh security-install
-sudo ./server.sh security-status
-```
-
-Архитектура, оговорки Docker/UFW/nftables, удаление и disposable-VM acceptance
-описаны в [deploy/SECURITY.md](deploy/SECURITY.md).
+Данная ветка требует проверки миграции на копии вашей базы перед выпуском. Stripe/SMTP остаются выключенными, пока оператор не задаст настройки; тесты не выполняют настоящие платежи и отправку почты.

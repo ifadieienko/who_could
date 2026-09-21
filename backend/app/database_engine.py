@@ -1,9 +1,10 @@
 """Shared MariaDB SQLAlchemy engine construction for the API and Alembic."""
+
 from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine, make_url
 
 from .config import Settings, settings
@@ -18,10 +19,22 @@ def database_connect_args(configuration: Settings, backend_name: str) -> dict[st
     return {}
 
 
-def create_database_engine(*, configuration: Settings = settings, poolclass=None) -> Engine:
+def create_database_engine(
+    *, configuration: Settings = settings, poolclass=None
+) -> Engine:
     """Create the MariaDB engine with identical URL/TLS semantics for every caller."""
     url = make_url(configuration.database_url)
     backend_name = url.get_backend_name()
+    if configuration.environment == "test" and backend_name == "sqlite":
+        engine = create_engine(
+            configuration.database_url, connect_args={"check_same_thread": False}
+        )
+
+        @event.listens_for(engine, "connect")
+        def foreign_keys(connection, _):
+            connection.execute("PRAGMA foreign_keys=ON")
+
+        return engine
     if backend_name != "mariadb":
         raise RuntimeError("Only MariaDB is supported")
     options: dict[str, Any] = {

@@ -4,17 +4,22 @@ services:
     image: ${BACKEND_IMAGE:-who-could-backend:local}
     build: { context: ., dockerfile: docker/backend.Dockerfile }
     restart: unless-stopped
-    env_file: ["${DEPLOYMENT_ENV:-/opt/who-could/config/deployment.env}"]
+    env_file:
+      - path: "${DEPLOYMENT_ENV:-/opt/who-could/config/deployment.env}"
+      - path: "${APP_SETTINGS_ENV:-/opt/who-could/config/workshop.env}"
+        required: false
     environment:
       WHO_COULD_ENV: production
+      UPLOAD_DIR: /app/uploads
       WHO_COULD_SECRET_FILE: /run/secrets/app_secret
       DATABASE_PASSWORD_FILE: ${DATABASE_PASSWORD_CONTAINER_FILE:-/run/secrets/mariadb_local_password}
     secrets: [app_secret]
     volumes:
+      - repair_uploads:/app/uploads
       - "${DATABASE_SSL_CA_FILE:-/opt/who-could/config/database-ca.pem}:/run/config/database-ca.pem:ro"
     group_add: ["${SECRETS_GID:-10001}"]
     expose: ["8000"]
-    networks: [frontend_network, database_network]
+    networks: [frontend_network, database_network, egress_network]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     read_only: true
@@ -63,7 +68,10 @@ services:
     mem_limit: ${CERTBOT_MEMORY_LIMIT:-256m}
     cpus: ${CERTBOT_CPU_LIMIT:-0.5}
     pids_limit: ${CERTBOT_PIDS_LIMIT:-128}
+volumes:
+  repair_uploads: {}
 networks:
+  egress_network: {}
   edge_network: {}
   frontend_network: { internal: true }
   database_network: { internal: true }

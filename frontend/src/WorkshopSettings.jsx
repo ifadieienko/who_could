@@ -68,6 +68,7 @@ export function TemplateEditor() {
   const [list, setList] = useState([]),
     [active, setActive] = useState(null),
     [name, setName] = useState(""),
+    [purpose, setPurpose] = useState("intake"),
     [columns, setColumns] = useState(2),
     [fields, setFields] = useState([empty()]),
     [preview, setPreview] = useState({});
@@ -76,6 +77,7 @@ export function TemplateEditor() {
     setActive(t);
     setName(t.name);
     setColumns(t.columns);
+    setPurpose(t.purpose || "intake");
     setFields(t.fields.map((f) => ({ ...f })));
   };
   const load = async (id) => {
@@ -102,6 +104,7 @@ export function TemplateEditor() {
           onClick={() => {
             setActive(null);
             setName("");
+            setPurpose("intake");
             setFields([empty()]);
           }}
         >
@@ -155,7 +158,7 @@ export function TemplateEditor() {
                   "/v2/templates" + (active ? "/" + active.id : ""),
                   {
                     method: active ? "PUT" : "POST",
-                    body: { name, columns, fields },
+                    body: { name, purpose, columns, fields },
                   },
                 );
                 await load(r.id);
@@ -170,6 +173,17 @@ export function TemplateEditor() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
+                </Field>
+                <Field label="Назначение формы">
+                  <select
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                  >
+                    <option value="intake">Приём</option>
+                    <option value="diagnosis">Диагностика</option>
+                    <option value="repair">Ремонт</option>
+                    <option value="quality">Проверка качества</option>
+                  </select>
                 </Field>
                 <Field label="Количество колонок">
                   <select
@@ -420,6 +434,7 @@ export function TemplateEditor() {
                     });
                     setActive(null);
                     setName("");
+                    setPurpose("intake");
                     setFields([empty()]);
                     await load();
                   })
@@ -633,6 +648,19 @@ export function WorkflowEditor() {
                 ))}
             </div>
             <div className="w-grid">
+              <Field label="Форма для завершения этапа">
+                <select
+                  value={s.form_phase || ""}
+                  onChange={(e) =>
+                    change(i, { form_phase: e.target.value || null })
+                  }
+                >
+                  <option value="">Без отдельной формы</option>
+                  <option value="diagnosis">Диагностика</option>
+                  <option value="repair">Ремонт</option>
+                  <option value="quality">Проверка качества</option>
+                </select>
+              </Field>
               <Field label="Обязательные ключи полей — через запятую">
                 <input
                   value={s.required_fields.join(",")}
@@ -936,9 +964,9 @@ export function Transfer() {
         call("/v2/templates"),
         call("/v2/workflows"),
       ]);
-      setTemplates(t.filter((x) => x.published));
+      setTemplates(t.filter((x) => x.published && x.purpose === "intake"));
       setFlows(w);
-      setTemplate(t.find((x) => x.published)?.id);
+      setTemplate(t.find((x) => x.published && x.purpose === "intake")?.id);
       setWorkflow(w[0]?.id);
     });
   }, []);
@@ -1086,17 +1114,28 @@ export function Transfer() {
 }
 export function Billing() {
   const [data, setData] = useState(null),
-    [mail, setMail] = useState([]);
+    [mail, setMail] = useState([]),
+    [selectedPlan, setSelectedPlan] = useState("starter");
   const a = useAction();
   useEffect(() => {
     a.run(async () => {
       setData(await call("/v2/billing"));
-      setMail(await call("/v2/outbox"));
+      const workshops = await call("/v2/workshops");
+      const wid = Number(localStorage.getItem("workshop"));
+      if (
+        workshops
+          .find((w) => w.id === wid)
+          ?.permissions.includes("contacts.read")
+      )
+        setMail(await call("/v2/outbox"));
     });
   }, []);
   const open = (path) =>
     a.run(async () => {
-      const r = await call("/v2/billing/" + path, { method: "POST" });
+      const r = await call("/v2/billing/" + path, {
+        method: "POST",
+        ...(path === "checkout" ? { body: { plan: selectedPlan } } : {}),
+      });
       location.href = r.url;
     });
   return (
@@ -1110,7 +1149,40 @@ export function Billing() {
               ? "Рабочий доступ открыт"
               : "Режим чтения и экспорта"}
           </h2>
-          <p>Состояние: {data.status}</p>
+          <p>
+            Тариф: {data.limits.name} · Состояние: {data.status}
+          </p>
+          <table className="w-table">
+            <thead>
+              <tr>
+                <th>Ресурс</th>
+                <th>Использовано</th>
+                <th>Лимит</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Активные сотрудники, включая владельца</td>
+                <td>{data.usage.members}</td>
+                <td>{data.limits.members}</td>
+              </tr>
+              <tr>
+                <td>Открытые заказы</td>
+                <td>{data.usage.open_orders}</td>
+                <td>{data.limits.open_orders}</td>
+              </tr>
+              <tr>
+                <td>Фотографии, МБ</td>
+                <td>{(data.usage.storage_bytes / 1024 ** 2).toFixed(1)}</td>
+                <td>{data.limits.storage_bytes / 1024 ** 2}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="w-muted">
+            Закрытые заказы и отключённые сотрудники сохраняются в истории и не
+            занимают активные места. Стоимость и период оплаты указаны в Stripe
+            перед подтверждением.
+          </p>
           <p>
             Пробный период до: {data.trial_until || "—"}
             <br />
@@ -1118,9 +1190,35 @@ export function Billing() {
           </p>
           {data.configured ? (
             <div className="w-actions">
-              <Button onClick={() => open("checkout")}>
-                Оформить подписку
-              </Button>
+              {!data.has_subscription && (
+                <>
+                  <select
+                    aria-label="Тариф подписки"
+                    value={selectedPlan}
+                    onChange={(e) => setSelectedPlan(e.target.value)}
+                  >
+                    {data.plans.map((p) => (
+                      <option
+                        key={p.code}
+                        value={p.code}
+                        disabled={!p.available}
+                      >
+                        {p.name} · {p.members} сотрудников · {p.open_orders}{" "}
+                        заказов
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    disabled={
+                      !data.plans.find((p) => p.code === selectedPlan)
+                        ?.available || a.busy
+                    }
+                    onClick={() => open("checkout")}
+                  >
+                    Оформить подписку
+                  </Button>
+                </>
+              )}
               <Button secondary onClick={() => open("portal")}>
                 Управлять подпиской
               </Button>

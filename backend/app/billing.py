@@ -8,6 +8,9 @@ import time
 from datetime import datetime, timezone
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Literal
+from .repair_schemas import Strict
+from .plans import PLANS, usage, price_for, plan_for_subscription
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from .database import db
@@ -53,23 +56,38 @@ def status(a=Depends(access)):
     with db() as s:
         w = s.get(Workshop, a.workshop_id)
         return {
+            "plan": w.plan,
+            "limits": PLANS.get(w.plan, PLANS["starter"]),
+            "usage": usage(s, w.id),
+            "plans": [
+                {"code": code, **limits, "available": bool(price_for(code))}
+                for code, limits in PLANS.items()
+            ],
+            "has_subscription": bool(
+                w.stripe_subscription
+                and w.billing_status not in {"canceled", "incomplete_expired"}
+            ),
             "status": w.billing_status,
             "trial_until": w.trial_until,
             "paid_until": w.paid_until,
             "writable": a.writable,
             "configured": bool(
                 os.getenv("STRIPE_SECRET_KEY")
-                and os.getenv("STRIPE_PRICE_ID")
+                and any(price_for(code) for code in PLANS)
                 and os.getenv("PUBLIC_URL")
             ),
             "enforced": os.getenv("BILLING_ENFORCED", "false").lower() == "true",
         }
 
 
+class CheckoutInput(Strict):
+    plan: Literal["starter", "pro", "business"] = "starter"
+
+
 @router.post("/v2/billing/checkout")
-def checkout(a=Depends(access)):
+def checkout(p: CheckoutInput = CheckoutInput(), a=Depends(access)):
     a.require("billing.manage")
-    price = os.getenv("STRIPE_PRICE_ID")
+    price = price_for(p.plan)
     base = os.getenv("PUBLIC_URL", "").rstrip("/")
     if not price or not base:
         raise HTTPException(503, "Тариф или адрес приложения не настроен")
@@ -96,7 +114,9 @@ def checkout(a=Depends(access)):
         if w.stripe_customer:
             data["customer"] = w.stripe_customer
         result = stripe(
-            "checkout/sessions", data, key=f"workshop-{w.id}-{int(time.time())//1800}"
+            "checkout/sessions",
+            data,
+            key=f"workshop-{w.id}-{p.plan}-{int(time.time())//1800}",
         )
         return {"url": result["url"]}
 
@@ -185,6 +205,9 @@ async def webhook(request: Request):
                 and w.billing_status not in {"canceled", "incomplete_expired"}
             ):
                 raise HTTPException(409, "Другая действующая подписка")
+            plan = plan_for_subscription(sub)
+            if sub["status"] in {"active", "trialing"}:
+                w.plan = plan
             w.stripe_subscription = subscription_id
             w.stripe_customer = sub.get("customer")
             w.billing_status = sub["status"]

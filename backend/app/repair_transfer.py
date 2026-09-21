@@ -222,6 +222,13 @@ def import_csv(
         if kind == "orders":
             t = scoped(s, FormTemplate, template_id, a)
             w = scoped(s, Workflow, workflow_id, a)
+            if t.purpose != "intake" or any(
+                stage.get("form_phase") for stage in w.stages
+            ):
+                raise HTTPException(
+                    422,
+                    "Для CSV выберите форму приёма и процесс без отдельных форм этапов",
+                )
             if not t.published or t.archived or w.archived:
                 raise HTTPException(422, "Шаблон и процесс должны быть действующими")
             if any(
@@ -241,6 +248,10 @@ def import_csv(
                 continue
             created += 1
             if dry_run:
+                if kind == "orders":
+                    from .plans import enforce_limit
+
+                    enforce_limit(s, a.workshop_id, "open_orders", created)
                 continue
             if kind == "customers":
                 s.add(

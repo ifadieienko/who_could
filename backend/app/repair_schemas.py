@@ -45,7 +45,11 @@ class FieldSpec(Strict):
         return self
 
 
+FormPhase = Literal["diagnosis", "repair", "quality"]
+
+
 class TemplateInput(Strict):
+    purpose: Literal["intake", "diagnosis", "repair", "quality"] = "intake"
     name: str = Field(min_length=1, max_length=160)
     fields: list[FieldSpec] = Field(max_length=100)
     columns: int = Field(default=2, ge=1, le=3)
@@ -71,6 +75,7 @@ class TemplateInput(Strict):
 
 
 class StageSpec(Strict):
+    form_phase: FormPhase | None = None
     key: str = Field(pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
     name: str = Field(min_length=1, max_length=120)
     category: Literal["active", "waiting", "ready"] = "active"
@@ -120,6 +125,7 @@ class CustomerInput(Strict):
 
 
 class OrderInput(Strict):
+    stage_forms: dict[FormPhase, int] = Field(default_factory=dict)
     template_id: int
     workflow_id: int
     customer_id: int | None = None
@@ -139,6 +145,10 @@ class OrderInput(Strict):
 
 class Version(Strict):
     version: int = Field(ge=1)
+
+
+class StageFormEdit(Version):
+    values: dict
 
 
 class OrderEdit(Version):

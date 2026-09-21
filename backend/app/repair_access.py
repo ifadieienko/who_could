@@ -109,6 +109,9 @@ def get_order(s, a, public_id, version=None):
         *order_filters(a), RepairOrder.public_id == public_id
     )
     if version is not None:
+        from .plans import lock_workshop
+
+        lock_workshop(s, a.workshop_id)
         query = query.with_for_update()
     o = s.scalar(query)
     if not o:

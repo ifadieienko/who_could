@@ -537,10 +537,12 @@ class WorkshopTest(unittest.TestCase):
             "status": "active",
             "current_period_end": int(time.time()) + 86400,
             "metadata": {"workshop_id": str(self.shop["id"])},
+            "items": {"data": [{"price": {"id": "price_pro"}}]},
         }
-        with patch.dict(os.environ, {"STRIPE_WEBHOOK_SECRET": secret}), patch(
-            "app.billing.stripe", return_value=sub
-        ):
+        with patch.dict(
+            os.environ,
+            {"STRIPE_WEBHOOK_SECRET": secret, "STRIPE_PRICE_PRO": "price_pro"},
+        ), patch("app.billing.stripe", return_value=sub):
             self.assertEqual(
                 self.c.post(
                     "/billing/webhook",
@@ -557,6 +559,8 @@ class WorkshopTest(unittest.TestCase):
                 ).status_code,
                 200,
             )
+
+        self.assertEqual(self.c.get("/v2/billing").json()["plan"], "pro")
 
     def test_print_and_escape(self):
         o = self.order(problem="<script>alert(1)</script>", draft=False)
@@ -746,6 +750,329 @@ class WorkshopTest(unittest.TestCase):
                 entry.size = 1
                 tar.addfile(entry, io.BytesIO(b"x"))
             self.assertNotEqual(run("restore", bad.getvalue()).returncode, 0)
+
+    def test_stage_forms_versions_validation_and_receipt(self):
+        templates = self.c.get("/v2/templates").json()
+        forms = {t["purpose"]: t["id"] for t in templates if t["purpose"] != "intake"}
+        flow = self.c.post(
+            "/v2/workflows",
+            json={
+                "name": "Separate forms",
+                "stages": [
+                    {
+                        "key": "diagnose",
+                        "name": "Diagnosis",
+                        "form_phase": "diagnosis",
+                        "next": ["repair"],
+                    },
+                    {
+                        "key": "repair",
+                        "name": "Repair",
+                        "form_phase": "repair",
+                        "next": ["quality"],
+                    },
+                    {
+                        "key": "quality",
+                        "name": "Quality",
+                        "form_phase": "quality",
+                        "next": ["ready"],
+                    },
+                    {"key": "ready", "name": "Ready", "category": "ready"},
+                ],
+            },
+        ).json()["id"]
+        o = self.order(workflow_id=flow, stage_forms=forms, draft=False)
+        for phase, key, target in [
+            ("diagnosis", "diagnosis", "repair"),
+            ("repair", "work_done", "quality"),
+            ("quality", "test_result", "ready"),
+        ]:
+            r = self.c.post(
+                "/v2/orders/" + o["id"] + "/transition",
+                json={"version": o["version"], "target": target},
+            )
+            self.assertEqual(r.status_code, 422, r.text)
+            r = self.c.patch(
+                "/v2/orders/" + o["id"] + "/forms/" + phase,
+                json={"version": o["version"], "values": {key: "Completed " + phase}},
+            )
+            self.assertEqual(r.status_code, 200, r.text)
+            previous = o
+            o = r.json()
+            conflict = self.c.patch(
+                "/v2/orders/" + o["id"] + "/forms/" + phase,
+                json={"version": previous["version"], "values": {key: "Stale"}},
+            )
+            self.assertEqual(conflict.status_code, 409)
+            o = self.post(o, "/transition", target=target)
+        # New published form versions cannot change an existing order's contract.
+        clone = self.c.post(f"/v2/templates/{forms['quality']}/version").json()["id"]
+        r = self.c.put(
+            f"/v2/templates/{clone}",
+            json={"name": "Changed quality", "purpose": "quality", "fields": []},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.c.post(f"/v2/templates/{clone}/publish")
+        o = self.post(o, "/issue", receiver="Client")
+        self.assertEqual(
+            o["receipt"]["stage_forms"]["quality"]["template"]["revision"], 1
+        )
+        self.assertIn(
+            "Completed quality",
+            self.c.get("/v2/orders/" + o["id"] + "/document?kind=issue").text,
+        )
+        self.assertEqual(
+            self.c.patch(
+                "/v2/orders/" + o["id"] + "/forms/quality",
+                json={"version": o["version"], "values": {"test_result": "Changed"}},
+            ).status_code,
+            409,
+        )
+        other, _ = self.register("foreign@example.com")
+        self.assertEqual(
+            other.patch(
+                "/v2/orders/" + o["id"] + "/forms/quality",
+                json={"version": o["version"], "values": {}},
+            ).status_code,
+            404,
+        )
+
+    def test_stage_form_field_and_photo_permissions(self):
+        t = self.c.post(
+            "/v2/templates",
+            json={
+                "name": "Restricted diagnosis",
+                "purpose": "diagnosis",
+                "fields": [
+                    {
+                        "key": "secret",
+                        "label": "Secret",
+                        "type": "text",
+                        "read_permission": "finance.read",
+                        "write_permission": "finance.write",
+                    },
+                    {
+                        "key": "photo",
+                        "label": "Private photo",
+                        "type": "image",
+                        "read_permission": "finance.read",
+                    },
+                ],
+            },
+        ).json()["id"]
+        self.c.post(f"/v2/templates/{t}/publish")
+        o = self.order(stage_forms={"diagnosis": t})
+        img = io.BytesIO()
+        Image.new("RGB", (10, 10), "red").save(img, "PNG")
+        photo = self.c.post(
+            "/v2/orders/" + o["id"] + "/attachments",
+            data={"version": o["version"], "phase": "diagnosis"},
+            files={"file": ("photo.png", img.getvalue(), "image/png")},
+        ).json()
+        o = self.c.patch(
+            "/v2/orders/" + o["id"] + "/forms/diagnosis",
+            json={
+                "version": photo["version"],
+                "values": {"secret": "Hidden amount", "photo": photo["id"]},
+            },
+        ).json()
+        master, _, _ = self.member()
+        r = master.get("/v2/orders/" + o["id"])
+        self.assertNotIn("Hidden amount", r.text)
+        self.assertEqual(r.json()["stage_forms"]["diagnosis"]["values"], {})
+        self.assertEqual(r.json()["attachments"], [])
+        self.assertEqual(master.get(f"/v2/files/{photo['id']}").status_code, 403)
+        self.assertEqual(
+            master.get("/v2/orders/" + o["id"] + "/attachments").json()["items"], []
+        )
+        self.assertNotIn(
+            "Hidden amount", master.get("/v2/orders/" + o["id"] + "/events").text
+        )
+        self.assertEqual(
+            master.patch(
+                "/v2/orders/" + o["id"] + "/forms/diagnosis",
+                json={"version": o["version"], "values": {"secret": "Guess"}},
+            ).status_code,
+            403,
+        )
+
+    def test_resource_limits_and_non_destructive_downgrade(self):
+        from app.plans import PLANS
+
+        with patch.dict(
+            PLANS["starter"], {"members": 2, "open_orders": 1, "storage_bytes": 1}
+        ):
+            _, member_id, role_id = self.member()
+            r = self.c.post(
+                "/v2/members",
+                json={
+                    "name": "Extra",
+                    "email": "extra@example.com",
+                    "password": "secure-password-123",
+                    "role_id": role_id,
+                },
+            )
+            self.assertEqual(r.status_code, 402)
+            self.c.patch(
+                f"/v2/members/{member_id}", json={"role_id": role_id, "active": False}
+            )
+            self.member(email="replacement@example.com")
+            self.assertEqual(
+                self.c.patch(
+                    f"/v2/members/{member_id}",
+                    json={"role_id": role_id, "active": True},
+                ).status_code,
+                402,
+            )
+            o = self.order()
+            payload = {
+                "template_id": self.t["id"],
+                "workflow_id": self.w["id"],
+                "customer": {"name": "Client"},
+                "model": "Phone",
+                "problem": "Broken",
+            }
+            self.assertEqual(self.c.post("/v2/orders", json=payload).status_code, 402)
+            files_before = set(Path(os.environ["UPLOAD_DIR"]).glob("*.jpg"))
+            img = io.BytesIO()
+            Image.new("RGB", (10, 10)).save(img, "PNG")
+            self.assertEqual(
+                self.c.post(
+                    "/v2/orders/" + o["id"] + "/attachments",
+                    data={"version": o["version"]},
+                    files={"file": ("photo.png", img.getvalue(), "image/png")},
+                ).status_code,
+                402,
+            )
+            self.assertEqual(
+                set(Path(os.environ["UPLOAD_DIR"]).glob("*.jpg")), files_before
+            )
+            closed = self.post(o, "/cancel", reason="Cancelled")
+            replacement = self.order()
+            self.assertEqual(
+                self.c.post(
+                    "/v2/orders/" + o["id"] + "/reopen",
+                    json={"version": closed["version"], "reason": "Reopen"},
+                ).status_code,
+                402,
+            )
+            self.assertEqual(self.c.get("/v2/orders/" + closed["id"]).status_code, 200)
+            self.assertEqual(
+                self.c.get("/v2/billing").json()["usage"]["open_orders"], 1
+            )
+
+    @unittest.skipIf(engine.dialect.name == "sqlite", "Requires MariaDB row locks")
+    def test_concurrent_order_quota(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        from app.plans import PLANS
+
+        barrier = Barrier(2)
+        cookies = dict(self.c.cookies)
+        headers = dict(self.c.headers)
+        payload = {
+            "template_id": self.t["id"],
+            "workflow_id": self.w["id"],
+            "customer": {"name": "Client"},
+            "model": "Phone",
+            "problem": "Broken",
+        }
+
+        def create():
+            with TestClient(app, cookies=cookies, headers=headers) as client:
+                barrier.wait(timeout=10)
+                return client.post("/v2/orders", json=payload).status_code
+
+        with patch.dict(PLANS["starter"], {"open_orders": 1}), ThreadPoolExecutor(
+            max_workers=2
+        ) as pool:
+            results = list(pool.map(lambda _: create(), range(2)))
+        self.assertEqual(sorted(results), [201, 402])
+        self.assertEqual(self.c.get("/v2/orders").json()["total"], 1)
+
+    def test_csv_limit_preview_and_atomic_commit(self):
+        from app.plans import PLANS
+
+        text = "external_id,customer_external_id,name,email,model,problem\n1,c1,Client,test@example.com,Phone,Broken\n2,c1,Client,test@example.com,Laptop,Broken\n"
+        with patch.dict(PLANS["starter"], {"open_orders": 1}):
+            for dry in ["true", "false"]:
+                r = self.c.post(
+                    "/v2/import/csv",
+                    data={
+                        "kind": "orders",
+                        "template_id": self.t["id"],
+                        "workflow_id": self.w["id"],
+                        "dry_run": dry,
+                    },
+                    files={"file": ("data.csv", text, "text/csv")},
+                )
+                self.assertEqual(r.status_code, 402, r.text)
+                self.assertEqual(self.c.get("/v2/orders").json()["total"], 0)
+                self.assertEqual(self.c.get("/v2/customers").json(), [])
+
+    def test_cursor_pages_and_plan_allowlist(self):
+        from app.repair_models import RepairEvent, Attachment
+        from app.plans import plan_for_subscription
+        from fastapi import HTTPException
+
+        o = self.order()
+        with db() as s:
+            row = s.scalar(select(RepairOrder).where(RepairOrder.public_id == o["id"]))
+            for n in range(65):
+                s.add(
+                    RepairEvent(
+                        workshop_id=self.shop["id"],
+                        order_id=row.id,
+                        kind="note",
+                        data={"text": str(n)},
+                    )
+                )
+                s.add(
+                    Attachment(
+                        workshop_id=self.shop["id"],
+                        order_id=row.id,
+                        storage_key=f"file{n}",
+                        filename=f"{n}.jpg",
+                        phase="repair",
+                        size=1,
+                    )
+                )
+        first = self.c.get("/v2/orders/" + o["id"]).json()
+        for kind, total in [("attachments", 65), ("events", 66)]:
+            self.assertEqual(len(first[kind]), 30)
+            ids = [item["id"] for item in first[kind]]
+            cursor = first[kind + "_next"]
+            while cursor:
+                page = self.c.get(
+                    "/v2/orders/" + o["id"] + "/" + kind + "?before=" + str(cursor)
+                ).json()
+                ids += [item["id"] for item in page["items"]]
+                cursor = page["next"]
+            self.assertEqual(len(ids), total)
+            self.assertEqual(len(set(ids)), total)
+        with patch.dict(
+            os.environ,
+            {"STRIPE_PRICE_PRO": "price_pro", "STRIPE_SECRET_KEY": "test-key"},
+        ), patch(
+            "app.billing.stripe",
+            return_value={"url": "https://checkout.stripe.com/test"},
+        ) as stripe:
+            self.assertEqual(
+                self.c.post("/v2/billing/checkout", json={"plan": "pro"}).status_code,
+                200,
+            )
+            self.assertEqual(
+                stripe.call_args.args[1]["line_items[0][price]"], "price_pro"
+            )
+            self.assertEqual(self.c.get("/v2/billing").json()["plan"], "starter")
+            self.assertEqual(
+                self.c.post("/v2/billing/checkout", json={"plan": "free"}).status_code,
+                422,
+            )
+            with self.assertRaises(HTTPException):
+                plan_for_subscription(
+                    {"items": {"data": [{"price": {"id": "untrusted_price"}}]}}
+                )
 
     def test_schema_matches(self):
         command.check(config())

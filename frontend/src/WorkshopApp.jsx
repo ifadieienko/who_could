@@ -511,6 +511,7 @@ function NewOrder() {
     [customers, setCustomers] = useState([]),
     [devices, setDevices] = useState([]);
   const [form, setForm] = useState({
+    stage_forms: {},
     template_id: "",
     workflow_id: "",
     customer_id: "",
@@ -534,7 +535,8 @@ function NewOrder() {
       setFlows(w);
       setForm((f) => ({
         ...f,
-        template_id: t.find((x) => x.published)?.id || "",
+        template_id:
+          t.find((x) => x.published && x.purpose === "intake")?.id || "",
         workflow_id: w[0]?.id || "",
       }));
     });
@@ -580,11 +582,13 @@ function NewOrder() {
               value={form.template_id}
               onChange={(e) => update("template_id", e.target.value)}
             >
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} · v{t.revision}
-                </option>
-              ))}
+              {templates
+                .filter((t) => t.purpose === "intake")
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} · v{t.revision}
+                  </option>
+                ))}
             </select>
           </Field>
           <Field label="Процесс ремонта">
@@ -601,6 +605,41 @@ function NewOrder() {
             </select>
           </Field>
         </div>
+        <div className="w-grid three">
+          {[
+            ["diagnosis", "Форма диагностики"],
+            ["repair", "Форма ремонта"],
+            ["quality", "Форма проверки"],
+          ].map(([phase, title]) => (
+            <Field key={phase} label={title}>
+              <select
+                value={form.stage_forms[phase] || ""}
+                onChange={(e) => {
+                  const selected = { ...form.stage_forms };
+                  if (e.target.value) selected[phase] = Number(e.target.value);
+                  else delete selected[phase];
+                  update("stage_forms", selected);
+                }}
+                required={flows
+                  .find((w) => w.id === Number(form.workflow_id))
+                  ?.stages.some((s) => s.form_phase === phase)}
+              >
+                <option value="">Не назначена</option>
+                {templates
+                  .filter((t) => t.purpose === phase)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} · v{t.revision}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          ))}
+        </div>
+        <p className="w-muted">
+          Выбранные версии форм закрепятся за заказом. Процесс может требовать
+          заполнить форму перед выходом с этапа.
+        </p>
         <h2>Клиент</h2>
         <div className="w-toolbar">
           <input
@@ -814,6 +853,11 @@ export function DynamicFields({
                       }
                     >
                       <option value="">Выберите загруженное фото</option>
+                      {value && !attachments.some((x) => x.id === value) && (
+                        <option value={value}>
+                          Фото #{value} · ранее загружено
+                        </option>
+                      )}
                       {attachments.map((x) => (
                         <option key={x.id} value={x.id}>
                           {x.filename} · #{x.id}
@@ -858,6 +902,7 @@ export function DynamicFields({
 function OrderDetail({ id, can, user }) {
   const [o, setOrder] = useState(null),
     [values, setValues] = useState({}),
+    [stageValues, setStageValues] = useState({}),
     [meta, setMeta] = useState({}),
     [members, setMembers] = useState([]),
     [history, setHistory] = useState([]);
@@ -871,6 +916,14 @@ function OrderDetail({ id, can, user }) {
   const put = (data) => {
     setOrder(data);
     setValues(data.values);
+    setStageValues(
+      Object.fromEntries(
+        Object.entries(data.stage_forms || {}).map(([phase, form]) => [
+          phase,
+          form.values,
+        ]),
+      ),
+    );
     setMeta({
       problem: data.problem,
       condition: data.condition,
@@ -911,6 +964,22 @@ function OrderDetail({ id, can, user }) {
         <p>Загрузка заказа…</p>
       </>
     );
+  const loadMore = (kind) =>
+    a.run(async () => {
+      const page = await call(
+        "/v2/orders/" + id + "/" + kind + "?before=" + o[kind + "_next"],
+      );
+      setOrder((current) => ({
+        ...current,
+        [kind]: [
+          ...current[kind],
+          ...page.items.filter(
+            (item) => !current[kind].some((old) => old.id === item.id),
+          ),
+        ],
+        [kind + "_next"]: page.next,
+      }));
+    });
   const stage = o.workflow.find((x) => x.key === o.stage),
     next = o.workflow.filter((x) => stage?.next.includes(x.key)),
     selected = next.find((x) => x.key === target);
@@ -1027,6 +1096,10 @@ function OrderDetail({ id, can, user }) {
       <div className="w-tabs">
         {[
           ["work", "Карточка"],
+          ...Object.entries(o.stage_forms || {}).map(([phase, form]) => [
+            phase,
+            form.template.name,
+          ]),
           ["photos", "Фотографии"],
           ...(can("finance.read") ? [["finance", "Сметы и оплата"]] : []),
           ["history", "История"],
@@ -1247,6 +1320,42 @@ function OrderDetail({ id, can, user }) {
           </aside>
         </div>
       )}
+      {o.stage_forms?.[tab] && (
+        <section className="w-panel">
+          <h2>
+            {o.stage_forms[tab].template.name} · v
+            {o.stage_forms[tab].template.revision}
+          </h2>
+          <p className="w-muted">
+            Обязательные поля проверяются при выходе с этапа, к которому
+            привязана эта форма.
+          </p>
+          <fieldset disabled={!editable || !can("orders.edit") || a.busy}>
+            <DynamicFields
+              template={o.stage_forms[tab].template}
+              values={stageValues[tab] || {}}
+              setValues={(v) =>
+                setStageValues((previous) => ({
+                  ...previous,
+                  [tab]: typeof v === "function" ? v(previous[tab]) : v,
+                }))
+              }
+              can={can}
+              attachments={o.attachments}
+            />
+          </fieldset>
+          {editable && can("orders.edit") && (
+            <Button
+              disabled={a.busy}
+              onClick={() =>
+                mutate("/forms/" + tab, { values: stageValues[tab] }, "PATCH")
+              }
+            >
+              Сохранить форму
+            </Button>
+          )}
+        </section>
+      )}
       {tab === "photos" && (
         <section className="w-panel">
           <h2>Состояние, комплектность и результаты</h2>
@@ -1260,6 +1369,7 @@ function OrderDetail({ id, can, user }) {
                 {o.status === "draft" && (
                   <option value="intake">Приёмка</option>
                 )}
+                <option value="diagnosis">Диагностика</option>
                 <option value="repair">Ремонт</option>
                 <option value="quality">Финальная проверка</option>
               </select>
@@ -1292,6 +1402,15 @@ function OrderDetail({ id, can, user }) {
               <Photo key={f.id} file={f} />
             ))}
           </div>
+          {o.attachments_next && (
+            <Button
+              secondary
+              disabled={a.busy}
+              onClick={() => loadMore("attachments")}
+            >
+              Ещё фотографии
+            </Button>
+          )}
           {!o.attachments.length && (
             <p className="w-muted">Фотографии ещё не добавлены.</p>
           )}
@@ -1329,6 +1448,9 @@ function OrderDetail({ id, can, user }) {
                 </small>
                 <strong>{eventName(e.kind)}</strong>
                 <p>
+                  {e.data.phase
+                    ? o.stage_forms?.[e.data.phase]?.template.name + ": "
+                    : ""}
                   {e.data.text ||
                     e.data.reason ||
                     [e.data.from, e.data.to].filter(Boolean).join(" → ") ||
@@ -1349,6 +1471,15 @@ function OrderDetail({ id, can, user }) {
               </li>
             ))}
           </ol>
+          {o.events_next && (
+            <Button
+              secondary
+              disabled={a.busy}
+              onClick={() => loadMore("events")}
+            >
+              Ранние события
+            </Button>
+          )}
         </section>
       )}
     </>
@@ -1366,6 +1497,7 @@ function eventName(k) {
       "order.reopened": "Заказ открыт повторно",
       "order.cancelled": "Заказ отменён",
       "photo.added": "Добавлена фотография",
+      "form.updated": "Обновлена форма этапа",
       "estimate.created": "Новая смета",
       "estimate.accepted": "Смета согласована",
       "estimate.declined": "Смета отклонена",

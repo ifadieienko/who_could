@@ -57,7 +57,7 @@ def upload(
     a=Depends(access),
 ):
     a.require("orders.edit")
-    if phase not in {"intake", "repair", "quality"}:
+    if phase not in {"intake", "diagnosis", "repair", "quality"}:
         raise HTTPException(422, "Недопустимый этап фотографии")
     raw = file.file.read(10 * 1024 * 1024 + 1)
     if len(raw) > 10 * 1024 * 1024:
@@ -76,6 +76,9 @@ def upload(
                     409,
                     "Фото приёмки добавляются до принятия. Поздние фото сохраняйте как ремонтные.",
                 )
+            from .plans import enforce_limit
+
+            enforce_limit(s, a.workshop_id, "storage_bytes", len(full))
             paths[0].write_bytes(full)
             paths[1].write_bytes(thumb)
             f = Attachment(
@@ -113,13 +116,10 @@ def download(id: int, thumb: bool = False, a=Depends(access)):
         o = s.get(RepairOrder, f.order_id)
         get_order(s, a, o.public_id)
         # A file referenced by a restricted field has the same restrictions.
-        for spec in o.template_snapshot.get("fields", []):
-            if (
-                spec["type"] == "image"
-                and o.values.get(spec["key"]) == id
-                and spec.get("read_permission") not in {None, *a.permissions}
-            ):
-                raise HTTPException(403, "Нет доступа к файлу")
+        from .repairs import restricted_attachment_ids
+
+        if id in restricted_attachment_ids(o, a):
+            raise HTTPException(403, "Нет доступа к файлу")
         path = storage() / (f.storage_key + (".thumb.jpg" if thumb else ".jpg"))
         if not path.is_file():
             raise HTTPException(404, "Файл недоступен в хранилище")
@@ -205,6 +205,22 @@ def document(id: str, kind: str = "intake", a=Depends(access)):
             value = snapshot.get("values", {}).get(f["key"])
             if value is not None:
                 rows.append((f["label"], str(value)))
+        if kind == "issue":
+            for phase, form in snapshot.get("stage_forms", {}).items():
+                for spec in form["template"].get("fields", []):
+                    if (
+                        spec.get("read_permission")
+                        and spec["read_permission"] not in a.permissions
+                    ):
+                        continue
+                    value = form["values"].get(spec["key"])
+                    if spec["type"] != "image" and value is not None:
+                        rows.append(
+                            (
+                                form["template"]["name"] + " · " + spec["label"],
+                                str(value),
+                            )
+                        )
         body = "".join(
             f"<tr><th>{html.escape(k)}</th><td>{html.escape(v)}</td></tr>"
             for k, v in rows

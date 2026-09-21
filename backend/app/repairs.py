@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+from copy import deepcopy
+from .plans import enforce_limit
 import hashlib
 import secrets
 from datetime import date, timedelta
@@ -52,6 +55,30 @@ def seed_workshop(s, user, name):
             layout={"columns": 2},
         )
     )
+    for phase, label, key in [
+        ("diagnosis", "Диагностика", "diagnosis"),
+        ("repair", "Ремонт", "work_done"),
+        ("quality", "Проверка качества", "test_result"),
+    ]:
+        s.add(
+            FormTemplate(
+                workshop_id=w.id,
+                family=str(uuid4()),
+                name=label,
+                purpose=phase,
+                published=True,
+                fields=[
+                    {
+                        "key": key,
+                        "label": label,
+                        "type": "text",
+                        "required": True,
+                        "width": 2,
+                    }
+                ],
+                layout={"columns": 2},
+            )
+        )
     s.add(
         Workflow(
             workshop_id=w.id,
@@ -147,6 +174,65 @@ def normalize_values(s, o, values, a, required=False, required_keys=()):
     return result
 
 
+def form_proxy(o, form):
+    return SimpleNamespace(
+        id=o.id, template_snapshot=form["template"], values=form["values"]
+    )
+
+
+def public_forms(o, a, forms=None):
+    return {
+        phase: {
+            "template": {
+                **form["template"],
+                "fields": visible_fields(form_proxy(o, form), a),
+            },
+            "values": {
+                f["key"]: form["values"].get(f["key"])
+                for f in visible_fields(form_proxy(o, form), a)
+            },
+        }
+        for phase, form in (o.stage_forms if forms is None else forms).items()
+    }
+
+
+def restricted_attachment_ids(o, a):
+    forms = [
+        {"template": o.template_snapshot, "values": o.values},
+        *o.stage_forms.values(),
+    ]
+    return {
+        form["values"].get(f["key"])
+        for form in forms
+        for f in form["template"].get("fields", [])
+        if f["type"] == "image"
+        and f.get("read_permission")
+        and f["read_permission"] not in a.permissions
+    } - {None}
+
+
+@router.patch("/orders/{id}/forms/{phase}")
+def edit_stage_form(id: str, phase: FormPhase, p: StageFormEdit, a=Depends(access)):
+    a.require("orders.edit")
+    with db() as s:
+        o = get_order(s, a, id, p.version)
+        if o.status in {"issued", "cancelled"}:
+            raise HTTPException(409, "Заказ закрыт")
+        form = o.stage_forms.get(phase)
+        if not form:
+            raise HTTPException(404, "Форма не назначена заказу")
+        values = normalize_values(s, form_proxy(o, form), p.values, a)
+        changes = {
+            key: {"before": form["values"].get(key), "after": value}
+            for key, value in values.items()
+            if value != form["values"].get(key)
+        }
+        o.stage_forms = {**o.stage_forms, phase: {**form, "values": values}}
+        touch(o)
+        event(s, a, o, "form.updated", {"phase": phase, "value_changes": changes})
+        return detail(s, o, a)
+
+
 def stage_of(o):
     return next((s for s in o.workflow_snapshot if s["key"] == o.stage), {})
 
@@ -203,7 +289,26 @@ def summary(s, o, a):
     }
 
 
-def detail(s, o, a):
+def detail(s, o, a, events_before=None, attachments_before=None):
+    files_query = select(Attachment).where(
+        Attachment.order_id == o.id,
+        Attachment.id.notin_(restricted_attachment_ids(o, a)),
+    )
+    events_query = select(RepairEvent).where(RepairEvent.order_id == o.id)
+    if "finance.read" not in a.permissions:
+        events_query = events_query.where(
+            ~RepairEvent.kind.startswith("estimate"),
+            ~RepairEvent.kind.startswith("payment"),
+        )
+    if attachments_before:
+        files_query = files_query.where(Attachment.id < attachments_before)
+    if events_before:
+        events_query = events_query.where(RepairEvent.id < events_before)
+    files_page = s.scalars(files_query.order_by(Attachment.id.desc()).limit(31)).all()
+    events_page = s.scalars(
+        events_query.order_by(RepairEvent.id.desc()).limit(31)
+    ).all()
+
     data = summary(s, o, a)
     fields = visible_fields(o, a)
     keys = {f["key"] for f in fields}
@@ -213,6 +318,7 @@ def detail(s, o, a):
             "accessories": o.accessories,
             "template": {**o.template_snapshot, "fields": fields},
             "values": {k: v for k, v in o.values.items() if k in keys},
+            "stage_forms": public_forms(o, a),
             "workflow": o.workflow_snapshot,
             "checks": o.checks,
             "intake_snapshot": {
@@ -221,6 +327,8 @@ def detail(s, o, a):
             "customer": None,
             "device_id": o.device_id,
             "customer_id": o.customer_id,
+            "attachments_next": files_page[29].id if len(files_page) > 30 else None,
+            "events_next": events_page[29].id if len(events_page) > 30 else None,
             "attachments": [
                 {
                     "id": f.id,
@@ -228,9 +336,7 @@ def detail(s, o, a):
                     "phase": f.phase,
                     "created_at": f.created_at,
                 }
-                for f in s.scalars(
-                    select(Attachment).where(Attachment.order_id == o.id)
-                ).all()
+                for f in files_page[:30]
             ],
             "events": [
                 {
@@ -240,12 +346,7 @@ def detail(s, o, a):
                     "actor_id": e.actor_id,
                     "created_at": e.created_at,
                 }
-                for e in s.scalars(
-                    select(RepairEvent)
-                    .where(RepairEvent.order_id == o.id)
-                    .order_by(RepairEvent.id.desc())
-                    .limit(200)
-                ).all()
+                for e in events_page[:30]
                 if not e.kind.startswith(("estimate", "payment"))
                 or "finance.read" in a.permissions
             ],
@@ -253,6 +354,9 @@ def detail(s, o, a):
                 (
                     {
                         **o.receipt,
+                        "stage_forms": public_forms(
+                            o, a, o.receipt.get("stage_forms", {})
+                        ),
                         "values": {
                             k: v
                             for k, v in o.receipt.get("values", {}).items()
@@ -267,21 +371,25 @@ def detail(s, o, a):
             ),
         }
     )
-    restricted_files = {
-        o.values.get(f["key"])
-        for f in o.template_snapshot.get("fields", [])
-        if f["type"] == "image"
-        and f.get("read_permission")
-        and f["read_permission"] not in a.permissions
-    }
+    restricted_files = restricted_attachment_ids(o, a)
     data["attachments"] = [
         f for f in data["attachments"] if f["id"] not in restricted_files
     ]
     for item in data["events"]:
         item["data"] = dict(item["data"])
+        event_keys = keys
+        if item["data"].get("phase") in o.stage_forms:
+            event_keys = {
+                f["key"]
+                for f in visible_fields(
+                    form_proxy(o, o.stage_forms[item["data"]["phase"]]), a
+                )
+            }
         if "value_changes" in item["data"]:
             item["data"]["value_changes"] = {
-                k: v for k, v in item["data"]["value_changes"].items() if k in keys
+                k: v
+                for k, v in item["data"]["value_changes"].items()
+                if k in event_keys
             }
         if "contacts.read" not in a.permissions:
             item["data"].pop("receiver", None)
@@ -290,6 +398,9 @@ def detail(s, o, a):
             item["data"]["previous_receipt"] = (
                 {
                     **old_receipt,
+                    "stage_forms": public_forms(
+                        o, a, old_receipt.get("stage_forms", {})
+                    ),
                     "values": {
                         k: v
                         for k, v in old_receipt.get("values", {}).items()
@@ -342,6 +453,20 @@ def detail(s, o, a):
     return data
 
 
+@router.get("/orders/{id}/attachments")
+def attachment_page(id: str, before: int | None = Query(None, ge=1), a=Depends(access)):
+    with db() as s:
+        data = detail(s, get_order(s, a, id), a, attachments_before=before)
+        return {"items": data["attachments"], "next": data["attachments_next"]}
+
+
+@router.get("/orders/{id}/events")
+def event_page(id: str, before: int | None = Query(None, ge=1), a=Depends(access)):
+    with db() as s:
+        data = detail(s, get_order(s, a, id), a, events_before=before)
+        return {"items": data["events"], "next": data["events_next"]}
+
+
 @router.get("/workshops")
 def workshops(user=Depends(current_user)):
     with db() as s:
@@ -373,6 +498,7 @@ def templates(a=Depends(access)):
             {
                 "id": t.id,
                 "name": t.name,
+                "purpose": t.purpose,
                 "revision": t.revision,
                 "published": t.published,
                 "archived": t.archived,
@@ -402,6 +528,7 @@ def create_template(p: TemplateInput, a=Depends(access)):
             workshop_id=a.workshop_id,
             family=str(uuid4()),
             name=p.name,
+            purpose=p.purpose,
             fields=[f.model_dump() for f in p.fields],
             layout={"columns": p.columns},
         )
@@ -420,6 +547,7 @@ def edit_template(id: int, p: TemplateInput, a=Depends(access)):
         if t.published:
             raise HTTPException(409, "Создайте новую версию опубликованного шаблона")
         t.name = p.name
+        t.purpose = p.purpose
         t.fields = [f.model_dump() for f in p.fields]
         t.layout = {"columns": p.columns}
         event(s, a, None, "template.edited", {"id": id})
@@ -451,6 +579,7 @@ def template_version(id: int, a=Depends(access)):
             workshop_id=a.workshop_id,
             family=t.family,
             name=t.name,
+            purpose=t.purpose,
             revision=revision,
             fields=t.fields,
             layout=t.layout,
@@ -584,10 +713,34 @@ def devices(customer_id: int, a=Depends(access)):
 
 
 def create_order_record(s, p, a):
+    enforce_limit(s, a.workshop_id, "open_orders")
     t = scoped(s, FormTemplate, p.template_id, a)
     w = scoped(s, Workflow, p.workflow_id, a)
     if not t.published or t.archived or w.archived:
         raise HTTPException(422, "Выберите опубликованный шаблон и действующий процесс")
+    if t.purpose != "intake":
+        raise HTTPException(422, "Для приёма выберите форму приёмки")
+    forms = {}
+    for phase, template_id in p.stage_forms.items():
+        form = scoped(s, FormTemplate, template_id, a)
+        if form.purpose != phase or not form.published or form.archived:
+            raise HTTPException(422, "Выберите опубликованную форму нужного назначения")
+        forms[phase] = {
+            "template": {
+                "id": form.id,
+                "name": form.name,
+                "revision": form.revision,
+                "purpose": phase,
+                "fields": form.fields,
+                "layout": form.layout,
+            },
+            "values": {},
+        }
+    if any(
+        stage.get("form_phase") and stage["form_phase"] not in forms
+        for stage in w.stages
+    ):
+        raise HTTPException(422, "Для процесса необходимо выбрать формы этапов")
     keys = {f["key"] for f in t.fields}
     if any(set(stage.get("required_fields", [])) - keys for stage in w.stages):
         raise HTTPException(422, "В форме отсутствуют обязательные поля процесса")
@@ -628,6 +781,7 @@ def create_order_record(s, p, a):
             "fields": t.fields,
             "layout": t.layout,
         },
+        stage_forms=forms,
         workflow_snapshot=w.stages,
         stage=w.stages[0]["key"],
         stage_deadline=utc() + timedelta(hours=w.stages[0].get("sla_hours", 48)),
@@ -835,6 +989,12 @@ def transition(id: str, p: Transition, a=Depends(access)):
         if o.status in {"draft", "issued", "cancelled"}:
             raise HTTPException(409, "Переход сейчас недоступен")
         current = stage_of(o)
+        phase = current.get("form_phase")
+        if phase:
+            form = o.stage_forms.get(phase)
+            if not form:
+                raise HTTPException(409, "Форма этапа отсутствует")
+            normalize_values(s, form_proxy(o, form), {}, a, required=True)
         if p.target not in current.get("next", []):
             raise HTTPException(409, "Недопустимый переход")
         target = next(x for x in o.workflow_snapshot if x["key"] == p.target)
@@ -898,6 +1058,16 @@ def issue(id: str, p: Issue, a=Depends(access)):
             raise HTTPException(
                 409, "Сначала завершите проверку и подготовьте устройство к выдаче"
             )
+        normalize_values(
+            s, o, {}, a, required_keys=stage_of(o).get("required_fields", [])
+        )
+        for phase in {stage.get("form_phase") for stage in o.workflow_snapshot} - {
+            None
+        }:
+            form = o.stage_forms.get(phase)
+            if not form:
+                raise HTTPException(409, "Форма этапа отсутствует")
+            normalize_values(s, form_proxy(o, form), {}, a, required=True)
         q = latest_estimate(s, o)
         total = q.total_cents if q and q.status == "accepted" else 0
         balance = total - paid(s, o)
@@ -914,6 +1084,7 @@ def issue(id: str, p: Issue, a=Depends(access)):
                     "Есть задолженность. Запишите оплату или причину выдачи без расчёта",
                 )
         receipt = {
+            "stage_forms": deepcopy(o.stage_forms),
             "issued_at": utc().isoformat(),
             "receiver": p.receiver,
             "issued_by": a.user_id,
@@ -939,6 +1110,8 @@ def reopen(id: str, p: Reopen, a=Depends(access)):
     a.require("orders.reopen")
     with db() as s:
         o = get_order(s, a, id, p.version)
+        if o.status in {"issued", "cancelled"}:
+            enforce_limit(s, a.workshop_id, "open_orders")
         if o.status not in {"issued", "cancelled", "ready"}:
             raise HTTPException(409, "Заказ уже открыт")
         event(
@@ -975,6 +1148,7 @@ def cancel(id: str, p: Reopen, a=Depends(access)):
 def warranty(id: str, p: Note, a=Depends(access)):
     a.require("orders.create")
     with db() as s:
+        enforce_limit(s, a.workshop_id, "open_orders")
         old = get_order(s, a, id, p.version)
         if old.status != "issued":
             raise HTTPException(409, "Гарантийное обращение создаётся после выдачи")
@@ -987,6 +1161,10 @@ def warranty(id: str, p: Note, a=Depends(access)):
             warranty_of=old.id,
             problem=p.text,
             template_snapshot=old.template_snapshot,
+            stage_forms={
+                phase: {"template": f["template"], "values": {}}
+                for phase, f in old.stage_forms.items()
+            },
             workflow_snapshot=old.workflow_snapshot,
             stage=old.workflow_snapshot[0]["key"],
             status="draft",
@@ -1197,6 +1375,7 @@ def add_member(p: MemberInput, a=Depends(access)):
     a.require("members.manage")
     a.write()
     with db() as s:
+        enforce_limit(s, a.workshop_id, "members")
         r = scoped(s, WorkshopRole, p.role_id, a)
         if r.is_owner:
             raise HTTPException(422, "Назначьте рабочую роль")
@@ -1238,6 +1417,8 @@ def edit_member(id: int, p: MemberEdit, a=Depends(access)):
             )
         if old.is_owner and (not p.active or not new.is_owner):
             raise HTTPException(409, "Владелец сохраняет доступ")
+        if p.active and not m.active:
+            enforce_limit(s, a.workshop_id, "members")
         m.role_id = new.id
         m.active = p.active
         event(

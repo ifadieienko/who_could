@@ -28,6 +28,7 @@ class Workshop(Base):
     billing_status: Mapped[str] = mapped_column(String(30), default="trialing")
     stripe_customer: Mapped[str | None] = mapped_column(String(100), nullable=True)
     stripe_subscription: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    plan: Mapped[str] = mapped_column(String(30), default="starter")
     billing_updated: Mapped[int] = mapped_column(Integer, default=0)
     paid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -70,6 +71,7 @@ class FormTemplate(Base):
     revision: Mapped[int] = mapped_column(Integer, default=1)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    purpose: Mapped[str] = mapped_column(String(20), default="intake")
     fields: Mapped[list] = mapped_column(JSON, default=list)
     layout: Mapped[dict] = mapped_column(JSON, default=dict)
 
@@ -132,6 +134,7 @@ class RepairOrder(Base):
     template_snapshot: Mapped[dict] = mapped_column(JSON)
     intake_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     values: Mapped[dict] = mapped_column(JSON, default=dict)
+    stage_forms: Mapped[dict] = mapped_column(JSON, default=dict)
     workflow_snapshot: Mapped[list] = mapped_column(JSON)
     stage: Mapped[str] = mapped_column(String(80), index=True)
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)

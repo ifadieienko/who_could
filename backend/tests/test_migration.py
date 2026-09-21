@@ -50,6 +50,7 @@ with db() as s:
  assert orders[0].assigned_to==2 and orders[0].workflow_snapshot[0]['name']=='Done'
  assert orders[0].receipt['receiver']=='Не записан в прежней версии'
  assert orders[0].values['legacy_2']=='SN-1'
+ assert all(o.stage_forms == {} for o in orders)
  assert isinstance(orders[0].values['legacy_1'],int)
  assert orders[0].intake_snapshot['values']==orders[0].values
  assert len(s.scalars(select(Attachment)).all())==2

@@ -13,12 +13,16 @@ import base64,io
 from datetime import datetime
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import MetaData,select
+from sqlalchemy import MetaData,select,JSON
 from PIL import Image
 from app.database import engine,db
 config=Config('alembic.ini')
 command.upgrade(config,'0008_master_service_board')
 m=MetaData();m.reflect(engine);now=datetime.utcnow()
+# MariaDB reflects its JSON alias as LONGTEXT; preserve JSON bind processors
+# when inserting the legacy fixture through reflected SQLAlchemy tables.
+for name in ('fields_snapshot','payload'):
+ m.tables['device_intake_orders'].c[name].type=JSON()
 image=io.BytesIO();Image.new('RGB',(5,5),'blue').save(image,'PNG')
 data='data:image/png;base64,'+base64.b64encode(image.getvalue()).decode()
 fields=[{'id':1,'name':'Photo','field_type':'image','position':0},{'id':2,'name':'Serial','field_type':'string','position':1}]

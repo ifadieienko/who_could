@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from PIL import Image
 from app.main import app
-from app.database import engine, db
+from app.database import engine, db, clear_db
 from app.models import Base
 from app.repair_models import RepairOrder, Workshop
 from app.repair_access import utc
@@ -40,9 +40,7 @@ class WorkshopTest(unittest.TestCase):
         command.upgrade(config(), "head")
 
     def setUp(self):
-        with engine.begin() as conn:
-            for table in reversed(Base.metadata.sorted_tables):
-                conn.execute(table.delete())
+        clear_db()
         self.c, self.shop = self.register("owner@example.com")
         self.t = self.c.get("/v2/templates").json()[0]
         self.w = self.c.get("/v2/workflows").json()[0]

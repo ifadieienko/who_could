@@ -41,7 +41,12 @@ def reset_db() -> None:
 def clear_db() -> None:
     """Delete data only in an explicitly configured development/test database."""
     _test_models()
+    from .repair_models import RepairOrder
+
     with engine.begin() as connection:
+        # MariaDB checks RESTRICT per row, even when all rows are deleted.
+        # Break the nullable self-reference only in this explicit test/dev reset.
+        connection.execute(RepairOrder.__table__.update().values(warranty_of=None))
         for table in reversed(Base.metadata.sorted_tables):
             connection.execute(table.delete())
 

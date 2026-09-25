@@ -37,4 +37,3 @@ def queue_email(s, o, subject, body, key):
                 dedupe_key=key,
             )
         )
-

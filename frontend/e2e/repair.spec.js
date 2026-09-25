@@ -340,6 +340,22 @@ test("company, site and generic asset with a mobile QR card", async ({
   await expect(
     page.getByRole("heading", { name: "Gauge A", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "New job", exact: true }).click();
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Annual gauge inspection");
+  await page.getByLabel("Job type").selectOption("inspection");
+  await page.getByLabel("Priority").selectOption("high");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Gauge A/ })).toBeVisible();
+  await expect(page.getByLabel("Неисправность", { exact: true })).toHaveValue(
+    "Annual gauge inspection",
+  );
+  await page.goBack();
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Gauge A", exact: true }),
+  ).toBeVisible();
   const path = new URL(page.url()).pathname;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(path);

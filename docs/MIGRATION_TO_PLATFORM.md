@@ -28,3 +28,7 @@ original purchase/intake date. Customers gain person/company details. Optional
 sites are stored separately. Both devices and sites stay within their tenant;
 asset external IDs are unique per tenant when supplied. Asset/customer removal
 is not exposed; asset retirement preserves history.
+
+0013 adds job vertical/type/priority and optional site references. No order is
+recreated and no workflow or form snapshot is changed. Existing order URLs and
+API clients remain compatible with the generic job endpoints.

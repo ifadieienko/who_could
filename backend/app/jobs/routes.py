@@ -10,10 +10,22 @@ from app.forms.service import form_proxy, normalize_values
 from app.jobs.finance_service import latest_estimate, paid, queue_email
 from app.jobs.serialization import detail, summary
 from app.jobs.service import create_order_record, freeze_intake
+from app.jobs.schemas import JobEdit
 from app.plans import enforce_limit
 from app.repair_access import access, dt, event, get_order, order_filters, touch, utc
 from app.repair_models import Device, Membership, RepairOrder
-from app.repair_schemas import Assignment, FormPhase, Issue, Note, OrderEdit, OrderInput, Reopen, StageFormEdit, Transition, Version
+from app.repair_schemas import (
+    Assignment,
+    FormPhase,
+    Issue,
+    Note,
+    OrderEdit,
+    OrderInput,
+    Reopen,
+    StageFormEdit,
+    Transition,
+    Version,
+)
 from app.workflows.service import stage_of
 
 router = APIRouter()
@@ -69,6 +81,8 @@ def orders(
     q: str = Query("", max_length=120),
     status: str | None = None,
     stalled: bool = False,
+    job_type: str | None = Query(None, max_length=80),
+    priority: str | None = Query(None, max_length=20),
     page: int = Query(1, ge=1),
     limit: int = Query(30, ge=1, le=100),
     a=Depends(access),
@@ -78,6 +92,10 @@ def orders(
         filters = order_filters(a)
         if status:
             filters.append(RepairOrder.status == status)
+        if job_type:
+            filters.append(RepairOrder.job_type == job_type)
+        if priority:
+            filters.append(RepairOrder.priority == priority)
         if q:
             filters.append(
                 or_(
@@ -124,7 +142,10 @@ def order(id: str, a=Depends(access)):
 
 
 @router.patch("/orders/{id}")
-def edit_order(id: str, p: OrderEdit, a=Depends(access)):
+def edit_order(id: str, p: JobEdit, a=Depends(access)):
+    if "description" in p.model_fields_set:
+        values = p.model_dump(exclude_unset=True, exclude={"description"})
+        p = JobEdit(**values, problem=p.description)
     a.require("orders.edit")
     with db() as s:
         o = get_order(s, a, id, p.version)
@@ -399,6 +420,10 @@ def warranty(id: str, p: Note, a=Depends(access)):
             device_id=old.device_id,
             warranty_of=old.id,
             currency=old.currency,
+            vertical_key=old.vertical_key,
+            job_type=old.job_type,
+            site_id=old.site_id,
+            priority=old.priority,
             problem=p.text,
             template_snapshot=old.template_snapshot,
             stage_forms={
@@ -432,4 +457,3 @@ def history(id: str, a=Depends(access)):
                 .order_by(RepairOrder.created_at.desc())
             ).all()
         ]
-

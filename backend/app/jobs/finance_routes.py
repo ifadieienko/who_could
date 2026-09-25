@@ -90,4 +90,3 @@ def payment(id: str, p: PaymentInput, a=Depends(access)):
             {"amount_cents": p.amount_cents, "method": p.method},
         )
         return detail(s, o, a)
-

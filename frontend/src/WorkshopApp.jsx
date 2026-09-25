@@ -15,6 +15,7 @@ import { go } from "./app/navigation.js";
 import { label } from "./features/forms/editor-options.js";
 import { useEffect, useState } from "react";
 import "./workshop.css";
+import { Jobs, NewJob } from "./features/jobs/Jobs.jsx";
 import { Assets } from "./features/assets/Assets.jsx";
 import { Customers } from "./features/customers/Customers.jsx";
 import { t, setLocale } from "./app/i18n.js";
@@ -135,6 +136,18 @@ export default function WorkshopApp() {
         <ErrorBox error={action.error} />
         {!shop ? (
           <p>Доступ к мастерской отключён. Обратитесь к владельцу.</p>
+        ) : path === "/jobs/new" ? (
+          <NewJob />
+        ) : /^\/jobs\/[^/]+$/.test(path) ? (
+          <OrderDetail
+            id={path.split("/")[2]}
+            can={can}
+            user={user}
+            apiPrefix="/v2/jobs"
+            routeBase="/jobs"
+          />
+        ) : path === "/jobs" ? (
+          <Jobs can={can} />
         ) : path === "/assets" || /^\/assets\/\d+$/.test(path) ? (
           <Assets can={can} id={path.split("/")[2]} />
         ) : path === "/customers" ? (

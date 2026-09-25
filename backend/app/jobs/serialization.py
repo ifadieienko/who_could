@@ -2,10 +2,23 @@
 
 from datetime import timedelta
 from sqlalchemy import select
-from app.forms.service import form_proxy, public_forms, restricted_attachment_ids, visible_fields
+from app.forms.service import (
+    form_proxy,
+    public_forms,
+    restricted_attachment_ids,
+    visible_fields,
+)
 from app.jobs.finance_service import paid
 from app.repair_access import dt, utc
-from app.repair_models import Attachment, Customer, Device, Estimate, RepairEvent, RepairOrder, RepairPayment
+from app.repair_models import (
+    Attachment,
+    Customer,
+    Device,
+    Estimate,
+    RepairEvent,
+    RepairOrder,
+    RepairPayment,
+)
 from app.workflows.service import stage_of
 
 
@@ -18,9 +31,18 @@ def summary(s, o, a):
     return {
         "id": o.public_id,
         "number": o.id,
+        "organization_id": o.workshop_id,
+        "asset_id": o.device_id,
+        "site_id": o.site_id,
+        "vertical_key": o.vertical_key,
+        "job_type": o.job_type,
+        "priority": o.priority,
+        "description": o.problem,
         "currency": o.currency,
         "model": (
-            device.model if device else o.template_snapshot.get("name", "Устройство")
+            (device.model or device.name)
+            if device
+            else o.template_snapshot.get("name", "Устройство")
         ),
         "serial": device.serial if device else "",
         "problem": o.problem,
@@ -204,4 +226,3 @@ def detail(s, o, a, events_before=None, attachments_before=None):
         ]
         data["paid_cents"] = paid(s, o)
     return data
-

@@ -257,3 +257,6 @@ app.include_router(build_warehouse_router(warehouse_access))
 
 from .assets.routes import router as assets_router
 app.include_router(assets_router)
+
+from .jobs.api import router as jobs_router
+app.include_router(jobs_router)

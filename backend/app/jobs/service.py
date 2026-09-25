@@ -8,10 +8,18 @@ from app.core.tenancy.records import scoped
 from app.forms.service import normalize_values
 from app.plans import enforce_limit
 from app.repair_access import dt, event, utc
-from app.repair_models import Workshop, Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow
+from app.repair_models import (
+    Workshop,
+    Attachment,
+    Customer,
+    Device,
+    FormTemplate,
+    RepairOrder,
+    Workflow,
+)
 
 
-def create_order_record(s, p, a):
+def create_job_record(s, p, a, *, job_type="repair", priority="normal", site_id=None):
     enforce_limit(s, a.workshop_id, "open_orders")
     t = scoped(s, FormTemplate, p.template_id, a)
     w = scoped(s, Workflow, p.workflow_id, a)
@@ -59,13 +67,21 @@ def create_order_record(s, p, a):
         if not p.model:
             raise HTTPException(422, "Укажите модель устройства")
         d = Device(
-            workshop_id=a.workshop_id, customer_id=c.id, name=p.model, model=p.model, serial=p.serial
+            workshop_id=a.workshop_id,
+            customer_id=c.id,
+            name=p.model,
+            model=p.model,
+            serial=p.serial,
         )
         s.add(d)
         s.flush()
     o = RepairOrder(
         public_id=str(uuid4()),
         currency=s.get(Workshop, a.workshop_id).currency,
+        vertical_key=s.get(Workshop, a.workshop_id).vertical_key,
+        job_type=job_type,
+        priority=priority,
+        site_id=site_id if site_id is not None else d.site_id,
         workshop_id=a.workshop_id,
         created_by=a.user_id,
         customer_id=c.id,
@@ -115,3 +131,6 @@ def freeze_intake(s, o):
         ],
     }
 
+
+# Temporary import compatibility for legacy CSV/repair endpoints.
+create_order_record = create_job_record

@@ -13,7 +13,13 @@ import { label } from "../forms/editor-options.js";
 import { localInput, localToISO, statusNames, time } from "../../app/format.js";
 import { useEffect, useState } from "react";
 
-export function OrderDetail({ id, can, user }) {
+export function OrderDetail({
+  id,
+  can,
+  user,
+  apiPrefix = "/v2/orders",
+  routeBase = "/orders",
+}) {
   const [o, setOrder] = useState(null),
     [values, setValues] = useState({}),
     [stageValues, setStageValues] = useState({}),
@@ -51,9 +57,9 @@ export function OrderDetail({ id, can, user }) {
   const refresh = () =>
     a.run(async () => {
       const [data, m, h] = await Promise.all([
-        call("/v2/orders/" + id),
+        call(apiPrefix + "/" + id),
         call("/v2/members"),
-        call("/v2/orders/" + id + "/history"),
+        call(apiPrefix + "/" + id + "/history"),
       ]);
       put(data);
       setMembers(m);
@@ -65,7 +71,7 @@ export function OrderDetail({ id, can, user }) {
   const mutate = (suffix, body, method = "POST") =>
     a.run(async () =>
       put(
-        await call("/v2/orders/" + id + suffix, {
+        await call(apiPrefix + "/" + id + suffix, {
           method,
           body: { version: o.version, ...body },
         }),
@@ -81,7 +87,7 @@ export function OrderDetail({ id, can, user }) {
   const loadMore = (kind) =>
     a.run(async () => {
       const page = await call(
-        "/v2/orders/" + id + "/" + kind + "?before=" + o[kind + "_next"],
+        apiPrefix + "/" + id + "/" + kind + "?before=" + o[kind + "_next"],
       );
       setOrder((current) => ({
         ...current,
@@ -114,7 +120,7 @@ export function OrderDetail({ id, can, user }) {
     <>
       <header className="w-page-head">
         <div>
-          <button className="w-link" onClick={() => go("/orders")}>
+          <button className="w-link" onClick={() => go(routeBase)}>
             ← Заказы
           </button>
           <h1>
@@ -132,7 +138,7 @@ export function OrderDetail({ id, can, user }) {
           <Button
             secondary
             onClick={() =>
-              a.run(() => printDocument("/v2/orders/" + id + "/label"))
+              a.run(() => printDocument(apiPrefix + "/" + id + "/label"))
             }
           >
             QR-этикетка
@@ -143,7 +149,8 @@ export function OrderDetail({ id, can, user }) {
               onClick={() =>
                 a.run(() =>
                   printDocument(
-                    "/v2/orders/" +
+                    apiPrefix +
+                      "/" +
                       id +
                       "/document?kind=" +
                       (o.status === "issued" ? "issue" : "intake"),
@@ -298,7 +305,7 @@ export function OrderDetail({ id, can, user }) {
                   disabled={a.busy}
                   onClick={() =>
                     a.run(async () => {
-                      const saved = await call("/v2/orders/" + id, {
+                      const saved = await call(apiPrefix + "/" + id, {
                         method: "PATCH",
                         body: {
                           version: o.version,
@@ -310,7 +317,7 @@ export function OrderDetail({ id, can, user }) {
                       });
                       put(saved);
                       put(
-                        await call("/v2/orders/" + id + "/accept", {
+                        await call(apiPrefix + "/" + id + "/accept", {
                           method: "POST",
                           body: { version: saved.version },
                         }),
@@ -406,11 +413,11 @@ export function OrderDetail({ id, can, user }) {
                   const text = prompt("Причина гарантийного обращения");
                   if (text)
                     a.run(async () => {
-                      const r = await call("/v2/orders/" + id + "/warranty", {
+                      const r = await call(apiPrefix + "/" + id + "/warranty", {
                         method: "POST",
                         body: { version: o.version, text },
                       });
-                      go("/orders/" + r.id);
+                      go(routeBase + "/" + r.id);
                     });
                 }}
               >
@@ -423,7 +430,7 @@ export function OrderDetail({ id, can, user }) {
               <button
                 className="w-history-link"
                 key={h.id}
-                onClick={() => go("/orders/" + h.id)}
+                onClick={() => go(routeBase + "/" + h.id)}
               >
                 #{h.number} · {statusNames[h.status]}
                 <small>{h.problem}</small>
@@ -498,11 +505,11 @@ export function OrderDetail({ id, can, user }) {
                   data.append("version", o.version);
                   data.append("phase", phase);
                   a.run(async () => {
-                    await call("/v2/orders/" + id + "/attachments", {
+                    await call(apiPrefix + "/" + id + "/attachments", {
                       method: "POST",
                       body: data,
                     });
-                    put(await call("/v2/orders/" + id));
+                    put(await call(apiPrefix + "/" + id));
                   });
                   e.target.value = "";
                 }}
@@ -528,7 +535,9 @@ export function OrderDetail({ id, can, user }) {
           )}
         </section>
       )}
-      {tab === "finance" && <Finance order={o} can={can} onUpdate={put} />}
+      {tab === "finance" && (
+        <Finance apiPrefix={apiPrefix} order={o} can={can} onUpdate={put} />
+      )}
       {tab === "history" && (
         <section className="w-panel">
           <h2>Журнал заказа</h2>

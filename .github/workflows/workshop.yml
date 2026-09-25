@@ -34,12 +34,15 @@ jobs:
           import pymysql
           with pymysql.connect(host='127.0.0.1', user='root', password='disposable_root_password', autocommit=True) as c:
               with c.cursor() as cursor:
+                  cursor.execute("CREATE DATABASE who_could_platform_migration")
+                  cursor.execute("GRANT ALL ON who_could_platform_migration.* TO 'test_user'@'%'")
                   cursor.execute("CREATE DATABASE who_could_migration")
                   cursor.execute("GRANT ALL ON who_could_migration.* TO 'test_user'@'%'")
           PY
       - name: API, migrations, tenancy and billing guards on MariaDB
         working-directory: backend
         env:
+          PLATFORM_MIGRATION_TEST_DATABASE_URL: mariadb+pymysql://test_user:disposable_test_password@127.0.0.1:3306/who_could_platform_migration
           MIGRATION_TEST_DATABASE_URL: mariadb+pymysql://test_user:disposable_test_password@127.0.0.1:3306/who_could_migration
           TEST_DATABASE_URL: mariadb+pymysql://test_user:disposable_test_password@127.0.0.1:3306/who_could_test
         run: python -m unittest discover -s tests -v
@@ -63,6 +66,8 @@ jobs:
         with: { node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: pip install -r backend/requirements.txt
       - run: npm ci
+        working-directory: frontend
+      - run: npm run test:unit
         working-directory: frontend
       - run: npm run build
         working-directory: frontend

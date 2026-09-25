@@ -398,6 +398,7 @@ def warranty(id: str, p: Note, a=Depends(access)):
             customer_id=old.customer_id,
             device_id=old.device_id,
             warranty_of=old.id,
+            currency=old.currency,
             problem=p.text,
             template_snapshot=old.template_snapshot,
             stage_forms={

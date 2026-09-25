@@ -15,6 +15,7 @@ from .repair_models import (
     RepairEvent,
 )
 from .security import SESSION_COOKIE_NAME, read_token
+from .core.permissions import effective_permissions
 
 
 def utc():
@@ -59,6 +60,13 @@ class Access:
     owner: bool
     writable: bool
 
+    def __post_init__(self):
+        self.permissions = effective_permissions(self.permissions, self.owner)
+
+    @property
+    def organization_id(self):
+        return self.workshop_id
+
     def require(self, p):
         if p not in self.permissions:
             raise HTTPException(403, "Недостаточно прав: " + p)
@@ -70,7 +78,12 @@ class Access:
             )
 
 
-def access(user=Depends(current_user), x_workshop_id: int = Header(...)):
+def access(user=Depends(current_user), x_workshop_id: int | None = Header(None), x_organization_id: int | None = Header(None)):
+    if x_workshop_id is not None and x_organization_id is not None and x_workshop_id != x_organization_id:
+        raise HTTPException(400, "Conflicting organization headers")
+    tenant_id = x_organization_id if x_organization_id is not None else x_workshop_id
+    if tenant_id is None or tenant_id < 1:
+        raise HTTPException(422, "Organization header required")
     with db() as s:
         row = s.execute(
             select(Membership, WorkshopRole, Workshop)
@@ -78,7 +91,7 @@ def access(user=Depends(current_user), x_workshop_id: int = Header(...)):
             .join(Workshop, Workshop.id == Membership.workshop_id)
             .where(
                 Membership.user_id == user["id"],
-                Membership.workshop_id == x_workshop_id,
+                Membership.workshop_id == tenant_id,
                 Membership.active.is_(True),
             )
         ).first()

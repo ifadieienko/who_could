@@ -194,8 +194,8 @@ def document(id: str, kind: str = "intake", a=Depends(access)):
             ]
             if "finance.read" in a.permissions:
                 rows += [
-                    ("Стоимость, PLN", f"{snapshot['total_cents']/100:.2f}"),
-                    ("Оплачено, PLN", f"{snapshot['paid_cents']/100:.2f}"),
+                    (f"Стоимость, {o.currency}", f"{snapshot['total_cents']/100:.2f}"),
+                    (f"Оплачено, {o.currency}", f"{snapshot['paid_cents']/100:.2f}"),
                 ]
         for f in o.template_snapshot.get("fields", []):
             if f.get("read_permission") and f["read_permission"] not in a.permissions:

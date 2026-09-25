@@ -18,6 +18,7 @@ def summary(s, o, a):
     return {
         "id": o.public_id,
         "number": o.id,
+        "currency": o.currency,
         "model": (
             device.model if device else o.template_snapshot.get("name", "Устройство")
         ),

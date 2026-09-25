@@ -3,6 +3,7 @@
 from datetime import timedelta
 from uuid import uuid4
 from app.repair_access import utc
+from app.core.permissions import effective_permissions
 from app.repair_defaults import DEFAULT_FIELDS, DEFAULT_ROLES, DEFAULT_STAGES
 from app.repair_models import FormTemplate, Membership, Workflow, Workshop, WorkshopRole
 
@@ -15,7 +16,7 @@ def seed_workshop(s, user, name):
         role = WorkshopRole(
             workshop_id=w.id,
             name=name,
-            permissions=permissions,
+            permissions=sorted(effective_permissions(permissions) | ({"assets.read", "assets.write"} if "orders.create" in permissions else set())),
             scope=scope,
             is_owner=name == "owner",
         )

@@ -6,7 +6,12 @@ import {
 } from "../../components/workshop/ui.jsx";
 import { call } from "../../repair-api.js";
 import { label } from "../forms/editor-options.js";
-import { money, statusNames, time } from "../../app/format.js";
+import {
+  configureOrganization,
+  money,
+  statusNames,
+  time,
+} from "../../app/format.js";
 import { useEffect, useState } from "react";
 
 export function QuotePortal({ token }) {
@@ -15,7 +20,11 @@ export function QuotePortal({ token }) {
     [confirmed, setConfirmed] = useState(false);
   const a = useAction();
   useEffect(() => {
-    a.run(async () => setQuote(await call("/public/quotes/" + token)));
+    a.run(async () => {
+      const result = await call("/public/quotes/" + token);
+      configureOrganization(result);
+      setQuote(result);
+    });
   }, [token]);
   const decide = (decision) =>
     a.run(async () => {
@@ -39,10 +48,10 @@ export function QuotePortal({ token }) {
             {q.lines.map((l, i) => (
               <p key={i}>
                 {l.description} × {l.quantity} —{" "}
-                {money(l.quantity * l.unit_cents)}
+                {money(l.quantity * l.unit_cents, q.currency)}
               </p>
             ))}
-            <h2>Итого: {money(q.total_cents)}</h2>
+            <h2>Итого: {money(q.total_cents, q.currency)}</h2>
             <p>Действует до {time(q.expires_at)}</p>
             {q.status === "pending" ? (
               <>

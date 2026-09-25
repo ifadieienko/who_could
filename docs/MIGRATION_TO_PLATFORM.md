@@ -1,0 +1,22 @@
+# Incremental platform migration
+
+Migrations 0001–0010 are immutable. Back up the database and files before upgrading
+an existing installation, using the existing procedures in WORKSHOP_RELEASE.md.
+
+0011 adds organization metadata/version and a job currency column. Existing
+workshop and job IDs, URLs, form snapshots, workflows, files, estimates, payments,
+and memberships remain intact. Legacy organizations default to repair/Russian,
+Europe/Warsaw, Poland and PLN; change timezone if this differs from your business.
+New organization records default to English. UI translation beyond organization
+settings is still in progress.
+
+Existing role permissions gain generic aliases without removing legacy values.
+The new generic form/workflow permissions are independent for newly edited roles.
+
+Apply using the deployment's existing Alembic upgrade-to-head step. Do not run a
+database reset. Downgrade is intentionally refused: restore a verified database
+and matching files backup if rollback is required.
+
+Automated migration gates cover an empty database, the populated pre-workshop
+0008 fixture, and a populated 0010 fixture. The latter compares every original
+column across the upgrade, allowing only additive permission aliases.

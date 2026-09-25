@@ -263,3 +263,30 @@ test("раздельные формы этапов, обязательность
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("organization currency, timezone and settings language persist", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Новая мастерская" }).click();
+  await page.getByLabel("Ваше имя", { exact: true }).fill("Organization Owner");
+  await page
+    .getByLabel("Название мастерской")
+    .fill("Organization settings demo");
+  await page
+    .getByLabel("Email", { exact: true })
+    .fill("organization-browser@example.com");
+  await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
+  await page.getByRole("button", { name: "Начать работу" }).click();
+  await page.getByRole("button", { name: "Организация", exact: true }).click();
+  await page.getByLabel("Default currency").selectOption("EUR");
+  await page.getByLabel("Time zone").fill("Europe/London");
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await page.reload();
+  await expect(page.getByLabel("Default currency")).toHaveValue("EUR");
+  await expect(page.getByLabel("Time zone")).toHaveValue("Europe/London");
+  await page.getByLabel("Language").selectOption("pl");
+  await page.getByRole("button", { name: "Zapisz ustawienia" }).click();
+  await page.reload();
+  await expect(page.getByLabel("Waluta domyślna")).toHaveValue("EUR");
+});

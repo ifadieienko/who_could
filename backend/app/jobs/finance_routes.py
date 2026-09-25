@@ -1,5 +1,8 @@
 """jobs / finance_routes domain. Legacy API behavior is preserved."""
 
+import hashlib
+import secrets
+
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select

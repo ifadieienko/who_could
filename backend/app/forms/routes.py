@@ -43,7 +43,7 @@ def templates(a=Depends(access)):
 
 @router.post("/templates", status_code=201)
 def create_template(p: TemplateInput, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("forms.manage")
     a.write()
     with db() as s:
         t = FormTemplate(
@@ -62,7 +62,7 @@ def create_template(p: TemplateInput, a=Depends(access)):
 
 @router.put("/templates/{id}")
 def edit_template(id: int, p: TemplateInput, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("forms.manage")
     a.write()
     with db() as s:
         t = scoped(s, FormTemplate, id, a)
@@ -78,7 +78,7 @@ def edit_template(id: int, p: TemplateInput, a=Depends(access)):
 
 @router.post("/templates/{id}/version", status_code=201)
 def template_version(id: int, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("forms.manage")
     a.write()
     with db() as s:
         t = scoped(s, FormTemplate, id, a)
@@ -113,7 +113,7 @@ def template_version(id: int, a=Depends(access)):
 
 @router.post("/templates/{id}/publish")
 def publish_template(id: int, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("forms.manage")
     a.write()
     with db() as s:
         t = scoped(s, FormTemplate, id, a)
@@ -124,7 +124,7 @@ def publish_template(id: int, a=Depends(access)):
 
 @router.post("/templates/{id}/archive")
 def archive_template(id: int, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("forms.manage")
     a.write()
     with db() as s:
         t = scoped(s, FormTemplate, id, a)

@@ -1,4 +1,6 @@
-PERMISSIONS = [
+from .core.permissions import GENERIC_PERMISSIONS
+
+PERMISSIONS = GENERIC_PERMISSIONS + [
     "orders.read",
     "orders.create",
     "orders.edit",

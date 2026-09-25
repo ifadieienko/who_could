@@ -28,7 +28,7 @@ def workflows(a=Depends(access)):
 
 @router.post("/workflows", status_code=201)
 def create_workflow(p: WorkflowInput, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("workflows.manage")
     a.write()
     with db() as s:
         w = Workflow(
@@ -45,7 +45,7 @@ def create_workflow(p: WorkflowInput, a=Depends(access)):
 
 @router.post("/workflows/{id}/version", status_code=201)
 def workflow_version(id: int, p: WorkflowInput, a=Depends(access)):
-    a.require("templates.manage")
+    a.require("workflows.manage")
     a.write()
     with db() as s:
         old = scoped(s, Workflow, id, a)

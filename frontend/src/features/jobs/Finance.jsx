@@ -27,13 +27,13 @@ export function Finance({ order: o, can, onUpdate }) {
         {o.estimates?.map((q) => (
           <article className="w-estimate" key={q.id}>
             <h3>
-              Версия {q.revision} · {money(q.total_cents)}{" "}
+              Версия {q.revision} · {money(q.total_cents, q.currency)}{" "}
               <span className="w-tag">{statusNames[q.status]}</span>
             </h3>
             {q.lines.map((l, i) => (
               <p key={i}>
                 {l.description} × {l.quantity} —{" "}
-                {money(l.quantity * l.unit_cents)}
+                {money(l.quantity * l.unit_cents, q.currency)}
               </p>
             ))}
             {q.decision_name && (
@@ -79,7 +79,7 @@ export function Finance({ order: o, can, onUpdate }) {
                     }
                   />
                   <input
-                    aria-label="Цена PLN"
+                    aria-label={`Цена ${o.currency}`}
                     type="number"
                     min="0"
                     step="0.01"
@@ -137,10 +137,11 @@ export function Finance({ order: o, can, onUpdate }) {
       </section>
       <section className="w-panel">
         <h2>Оплата</h2>
-        <h3>Получено: {money(o.paid_cents)}</h3>
+        <h3>Получено: {money(o.paid_cents, o.currency)}</h3>
         {o.payments?.map((p) => (
           <p key={p.id}>
-            {money(p.amount_cents)} · {p.method} · {time(p.created_at)}
+            {money(p.amount_cents, o.currency)} · {p.method} ·{" "}
+            {time(p.created_at)}
           </p>
         ))}
         {can("finance.write") && (
@@ -162,7 +163,7 @@ export function Finance({ order: o, can, onUpdate }) {
               });
             }}
           >
-            <Field label="Сумма PLN">
+            <Field label={`Сумма ${o.currency}`}>
               <input
                 type="number"
                 min="0.01"

@@ -24,6 +24,13 @@ class Workshop(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    vertical_key: Mapped[str] = mapped_column(String(30), default="repair")
+    locale: Mapped[str] = mapped_column(String(10), default="en")
+    timezone: Mapped[str] = mapped_column(String(80), default="Europe/Warsaw")
+    currency: Mapped[str] = mapped_column(String(3), default="PLN")
+    country: Mapped[str] = mapped_column(String(2), default="PL")
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    version: Mapped[int] = mapped_column(Integer, default=1)
     trial_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     billing_status: Mapped[str] = mapped_column(String(30), default="trialing")
     stripe_customer: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -127,6 +134,7 @@ class RepairOrder(Base):
     warranty_of: Mapped[int | None] = mapped_column(
         ForeignKey("repair_orders.id"), nullable=True
     )
+    currency: Mapped[str] = mapped_column(String(3), default="PLN")
     problem: Mapped[str] = mapped_column(Text, default="")
     condition: Mapped[str] = mapped_column(Text, default="")
     accessories: Mapped[str] = mapped_column(Text, default="")

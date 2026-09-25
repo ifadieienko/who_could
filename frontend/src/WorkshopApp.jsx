@@ -15,6 +15,8 @@ import { go } from "./app/navigation.js";
 import { label } from "./features/forms/editor-options.js";
 import { useEffect, useState } from "react";
 import "./workshop.css";
+import { configureOrganization } from "./app/format.js";
+import { OrganizationSettings } from "./features/organizations/Settings.jsx";
 
 export default function WorkshopApp() {
   const [user, setUser] = useState(null),
@@ -62,14 +64,16 @@ export default function WorkshopApp() {
   if (!user) return <Auth onLogin={load} />;
   const shop = shops.find((x) => x.id === selected),
     can = (p) => shop?.permissions.includes(p);
+  if (shop) configureOrganization(shop);
   const nav = [
     ["/orders", "Заказы", "orders.read"],
-    ["/templates", "Формы", "templates.manage"],
-    ["/workflows", "Процессы", "templates.manage"],
+    ["/templates", "Формы", "forms.manage"],
+    ["/workflows", "Процессы", "workflows.manage"],
     ["/warehouse", "Склад", "warehouse.manage"],
     ["/team", "Команда", "members.manage"],
     ["/data", "Перенос данных", "data.export"],
     ["/billing", "Подписка", "billing.manage"],
+    ["/settings", "Организация", "organization.manage"],
   ].filter((x) => can(x[2]));
   const logout = () =>
     action.run(async () => {
@@ -123,6 +127,8 @@ export default function WorkshopApp() {
         <ErrorBox error={action.error} />
         {!shop ? (
           <p>Доступ к мастерской отключён. Обратитесь к владельцу.</p>
+        ) : path === "/settings" ? (
+          <OrganizationSettings shop={shop} onSave={load} />
         ) : path === "/templates" ? (
           <TemplateEditor />
         ) : path === "/workflows" ? (

@@ -8,7 +8,7 @@ from app.core.tenancy.records import scoped
 from app.forms.service import normalize_values
 from app.plans import enforce_limit
 from app.repair_access import dt, event, utc
-from app.repair_models import Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow
+from app.repair_models import Workshop, Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow
 
 
 def create_order_record(s, p, a):
@@ -65,6 +65,7 @@ def create_order_record(s, p, a):
         s.flush()
     o = RepairOrder(
         public_id=str(uuid4()),
+        currency=s.get(Workshop, a.workshop_id).currency,
         workshop_id=a.workshop_id,
         created_by=a.user_id,
         customer_id=c.id,

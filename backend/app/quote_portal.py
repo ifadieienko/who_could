@@ -50,6 +50,8 @@ def quote(token: str):
         w = s.get(Workshop, o.workshop_id)
         return {
             "workshop": w.name,
+            "locale": w.locale,
+            "timezone": w.timezone,
             "number": o.id,
             "revision": q.revision,
             "lines": q.lines,

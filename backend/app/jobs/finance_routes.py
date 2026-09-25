@@ -38,6 +38,7 @@ def estimate(id: str, p: EstimateInput, a=Depends(access)):
             order_id=o.id,
             revision=(old.revision + 1 if old else 1),
             lines=[x.model_dump() for x in p.lines],
+            currency=o.currency,
             total_cents=sum(x.quantity * x.unit_cents for x in p.lines),
             token_hash=hashlib.sha256(token.encode()).hexdigest(),
             expires_at=utc() + timedelta(days=7),
@@ -59,7 +60,7 @@ def estimate(id: str, p: EstimateInput, a=Depends(access)):
                 s,
                 o,
                 "Согласование стоимости ремонта",
-                f"Заказ #{o.id}. Смета №{q.revision}: {q.total_cents/100:.2f} PLN. Решение: {base}{link}",
+                f"Заказ #{o.id}. Смета №{q.revision}: {q.total_cents/100:.2f} {q.currency}. Решение: {base}{link}",
                 f"estimate:{q.id}",
             )
         return {"order": detail(s, o, a), "approval_path": link}

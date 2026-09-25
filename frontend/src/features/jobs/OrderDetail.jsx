@@ -10,7 +10,7 @@ import { Photo } from "../../components/workshop/Photo.jsx";
 import { call, printDocument } from "../../repair-api.js";
 import { go } from "../../app/navigation.js";
 import { label } from "../forms/editor-options.js";
-import { localInput, statusNames, time } from "../../app/format.js";
+import { localInput, localToISO, statusNames, time } from "../../app/format.js";
 import { useEffect, useState } from "react";
 
 export function OrderDetail({ id, can, user }) {
@@ -105,7 +105,7 @@ export function OrderDetail({ id, can, user }) {
       {
         values,
         ...meta,
-        due_at: meta.due_at ? new Date(meta.due_at).toISOString() : null,
+        due_at: meta.due_at ? localToISO(meta.due_at) : null,
         reason,
       },
       "PATCH",
@@ -304,9 +304,7 @@ export function OrderDetail({ id, can, user }) {
                           version: o.version,
                           values,
                           ...meta,
-                          due_at: meta.due_at
-                            ? new Date(meta.due_at).toISOString()
-                            : null,
+                          due_at: meta.due_at ? localToISO(meta.due_at) : null,
                           reason,
                         },
                       });

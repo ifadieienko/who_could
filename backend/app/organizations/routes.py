@@ -11,10 +11,13 @@ from app.repair_defaults import PERMISSIONS
 from app.repair_models import Membership, Workshop, WorkshopRole
 from app.repair_schemas import MemberEdit, MemberInput, RoleInput
 from app.security import hash_password
+from app.core.permissions import effective_permissions
+from app.organizations.schemas import OrganizationEdit
 
 router = APIRouter()
 
 
+@router.get("/organizations")
 @router.get("/workshops")
 def workshops(user=Depends(current_user)):
     with db() as s:
@@ -22,7 +25,8 @@ def workshops(user=Depends(current_user)):
             {
                 "id": w.id,
                 "name": w.name,
-                "permissions": r.permissions,
+                **organization_metadata(w),
+                "permissions": sorted(effective_permissions(r.permissions, r.is_owner)),
                 "scope": r.scope,
                 "owner": r.is_owner,
                 "billing_status": w.billing_status,
@@ -71,7 +75,7 @@ def roles(a=Depends(access)):
                 {
                     "id": r.id,
                     "name": r.name,
-                    "permissions": r.permissions,
+                    "permissions": sorted(effective_permissions(r.permissions, r.is_owner)),
                     "scope": r.scope,
                     "owner": r.is_owner,
                 }
@@ -184,3 +188,31 @@ def edit_member(id: int, p: MemberEdit, a=Depends(access)):
         )
         return {"id": id}
 
+
+
+def organization_metadata(w):
+    return {key: getattr(w, key) for key in ("vertical_key", "locale", "timezone", "currency", "country", "settings", "version")}
+
+
+@router.get("/organization")
+def organization(a=Depends(access)):
+    with db() as s:
+        w = s.get(Workshop, a.organization_id)
+        return {"id": w.id, "name": w.name, **organization_metadata(w)}
+
+
+@router.patch("/organization")
+def update_organization(p: OrganizationEdit, a=Depends(access)):
+    a.require("organization.manage")
+    a.write()
+    with db() as s:
+        w = s.scalar(select(Workshop).where(Workshop.id == a.organization_id).with_for_update())
+        if w.version != p.version:
+            raise HTTPException(409, "Organization changed; reload settings")
+        before = {"name": w.name, **organization_metadata(w)}
+        for key, value in p.model_dump(exclude={"version"}).items():
+            setattr(w, key, value)
+        w.version += 1
+        after = {"name": w.name, **organization_metadata(w)}
+        event(s, a, None, "organization.updated", {"before": before, "after": after})
+        return {"id": w.id, **after}

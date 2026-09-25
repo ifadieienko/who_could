@@ -32,17 +32,25 @@ def customers(q: str = Query("", max_length=120), a=Depends(access)):
 
 
 @router.get("/devices")
-def devices(customer_id: int, a=Depends(access)):
+def devices(
+    customer_id: int,
+    after: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    a=Depends(access),
+):
     a.require("contacts.read")
     with db() as s:
         scoped(s, Customer, customer_id, a)
         return [
             {"id": d.id, "model": d.model, "serial": d.serial}
             for d in s.scalars(
-                select(Device).where(
+                select(Device)
+                .order_by(Device.id)
+                .limit(limit)
+                .where(
                     Device.workshop_id == a.workshop_id,
                     Device.customer_id == customer_id,
+                    Device.id > after,
                 )
             ).all()
         ]
-

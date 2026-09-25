@@ -290,3 +290,68 @@ test("organization currency, timezone and settings language persist", async ({
   await page.reload();
   await expect(page.getByLabel("Waluta domyślna")).toHaveValue("EUR");
 });
+
+test("company, site and generic asset with a mobile QR card", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Новая мастерская" }).click();
+  await page.getByLabel("Ваше имя", { exact: true }).fill("Asset Owner");
+  await page.getByLabel("Название мастерской").fill("Asset demo");
+  await page
+    .getByLabel("Email", { exact: true })
+    .fill("assets-browser@example.com");
+  await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
+  await page.getByRole("button", { name: "Начать работу" }).click();
+  await page.getByRole("button", { name: "Customers", exact: true }).click();
+  await page.getByRole("button", { name: "New customer", exact: true }).click();
+  await page.getByLabel("Customer type").selectOption("company");
+  await page.getByLabel("Name", { exact: true }).fill("Precision Lab");
+  await page
+    .getByLabel("Company name", { exact: true })
+    .fill("Precision Lab Ltd");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Precision Lab", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Sites", exact: true }).click();
+  await page.getByRole("button", { name: "New site", exact: true }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Laboratory A");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Laboratory A", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Assets", exact: true }).click();
+  await page.getByRole("button", { name: "New asset", exact: true }).click();
+  await expect(
+    page.getByLabel("Customer", { exact: true }).locator("option"),
+  ).toHaveCount(2);
+  await page
+    .getByLabel("Customer", { exact: true })
+    .selectOption({ label: "Precision Lab · Precision Lab Ltd" });
+  await expect(
+    page.getByLabel("Site (optional)").locator("option"),
+  ).toHaveCount(2);
+  await page
+    .getByLabel("Site (optional)")
+    .selectOption({ label: "Laboratory A" });
+  await page.getByLabel("Name", { exact: true }).fill("Gauge A");
+  await page.getByLabel("Serial number").fill("G-001");
+  await page.getByLabel("Asset type").selectOption("instrument");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Gauge A", exact: true }),
+  ).toBeVisible();
+  const path = new URL(page.url()).pathname;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(path);
+  await expect(
+    page.getByRole("heading", { name: "Gauge A", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Print QR label" }).click();
+  await expect(page.locator("iframe")).toHaveCount(1);
+  expect(await page.locator("iframe").getAttribute("srcdoc")).toContain("<svg");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});

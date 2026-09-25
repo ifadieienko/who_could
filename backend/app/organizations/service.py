@@ -16,7 +16,14 @@ def seed_workshop(s, user, name):
         role = WorkshopRole(
             workshop_id=w.id,
             name=name,
-            permissions=sorted(effective_permissions(permissions) | ({"assets.read", "assets.write"} if "orders.create" in permissions else set())),
+            permissions=sorted(
+                effective_permissions(permissions)
+                | (
+                    {"assets.read", "assets.write", "customers.write"}
+                    if "orders.create" in permissions
+                    else set()
+                )
+            ),
             scope=scope,
             is_owner=name == "owner",
         )
@@ -69,4 +76,3 @@ def seed_workshop(s, user, name):
         )
     )
     return w
-

@@ -1,6 +1,6 @@
 """Permission compatibility without granting one new capability from another."""
 JOB_ACTIONS = ("read", "create", "edit", "assign", "transition", "issue", "reopen")
-GENERIC_PERMISSIONS = [*("jobs." + key for key in JOB_ACTIONS), "customers.read",
+GENERIC_PERMISSIONS = [*("jobs." + key for key in JOB_ACTIONS), "customers.read", "customers.write",
     "assets.read", "assets.write", "forms.manage", "workflows.manage",
     "documents.manage", "organization.manage"]
 

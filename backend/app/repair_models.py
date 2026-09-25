@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Index,
     JSON,
     String,
     Text,
@@ -94,6 +95,19 @@ class Workflow(Base):
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class Site(Base):
+    __tablename__ = "customer_sites"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workshop_id: Mapped[int] = mapped_column(ForeignKey("workshops.id"), index=True)
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("repair_customers.id"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(160))
+    address: Mapped[str] = mapped_column(Text, default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+
 class Customer(Base):
     __tablename__ = "repair_customers"
     __table_args__ = (UniqueConstraint("workshop_id", "external_id"),)
@@ -103,15 +117,36 @@ class Customer(Base):
     name: Mapped[str] = mapped_column(String(160))
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    kind: Mapped[str] = mapped_column(String(20), default="person")
+    company_name: Mapped[str] = mapped_column(String(160), default="")
+    tax_id: Mapped[str] = mapped_column(String(80), default="")
+    contact_person: Mapped[str] = mapped_column(String(160), default="")
+    address: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class Device(Base):
     __tablename__ = "repair_devices"
+    __table_args__ = (
+        Index("uq_asset_external_id", "workshop_id", "external_id", unique=True),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     workshop_id: Mapped[int] = mapped_column(ForeignKey("workshops.id"), index=True)
     customer_id: Mapped[int] = mapped_column(ForeignKey("repair_customers.id"))
     model: Mapped[str] = mapped_column(String(160))
     serial: Mapped[str] = mapped_column(String(160), default="")
+    site_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customer_sites.id"), nullable=True
+    )
+    asset_type: Mapped[str] = mapped_column(String(80), default="device")
+    name: Mapped[str] = mapped_column(String(160), default="")
+    manufacturer: Mapped[str] = mapped_column(String(160), default="")
+    external_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="active")
+    custom_values: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class RepairOrder(Base):

@@ -59,7 +59,7 @@ def create_order_record(s, p, a):
         if not p.model:
             raise HTTPException(422, "Укажите модель устройства")
         d = Device(
-            workshop_id=a.workshop_id, customer_id=c.id, model=p.model, serial=p.serial
+            workshop_id=a.workshop_id, customer_id=c.id, name=p.model, model=p.model, serial=p.serial
         )
         s.add(d)
         s.flush()

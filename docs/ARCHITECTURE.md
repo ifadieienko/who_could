@@ -32,9 +32,23 @@ rejected rather than silently shifted.
 
 ## Still scheduled in the supplied development plan
 
-Generic assets/sites and job APIs, form instances and advanced field types,
+Generic job APIs, form instances and advanced field types,
 generic workflow guards, PDF documents, scheduling, jewellery and calibration,
 full English/Polish localization, invitations and storage hardening are not
 claimed complete by this foundation. Organization settings currently have
 English/Polish/Russian labels; existing repair screens retain their legacy labels.
 See `PLATFORM_DEVELOPMENT_PLAN.md` for the full accepted scope.
+
+## Asset/customer foundation
+
+`assets` exposes paginated `/v2/assets`, `/v2/customer-records` and `/v2/sites`.
+`Asset` maps to `repair_devices`, so historical order links need no replacement.
+QR links open authenticated asset cards. Job history and image listing obey job
+scope and restricted form-field permissions; downloads retain existing checks.
+Own-work roles cannot mutate shared customer/site/asset records. Reassignment to
+a different customer is rejected pending a dedicated ownership-transfer flow.
+Assets can be retired without destroying history. Documents, custody and next
+service entries will be attached by their later domain modules.
+
+New customer/asset screens use `app/i18n.js` and shared EN/PL/RU dictionaries.
+DE/CS/SK are reserved but not presented as translated languages.

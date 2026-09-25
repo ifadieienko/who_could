@@ -7,38 +7,7 @@ import {
   useAction,
 } from "../../components/workshop/ui.jsx";
 
-const copy = {
-  en: {
-    title: "Organization",
-    name: "Name",
-    locale: "Language",
-    zone: "Time zone",
-    currency: "Default currency",
-    country: "Country (ISO code)",
-    save: "Save settings",
-    note: "Existing jobs keep their original currency. Dates are displayed in this time zone.",
-  },
-  pl: {
-    title: "Organizacja",
-    name: "Nazwa",
-    locale: "Język",
-    zone: "Strefa czasowa",
-    currency: "Waluta domyślna",
-    country: "Kraj (kod ISO)",
-    save: "Zapisz ustawienia",
-    note: "Istniejące zlecenia zachowują swoją walutę. Daty są wyświetlane w tej strefie czasowej.",
-  },
-  ru: {
-    title: "Организация",
-    name: "Название",
-    locale: "Язык",
-    zone: "Часовой пояс",
-    currency: "Валюта по умолчанию",
-    country: "Страна (код ISO)",
-    save: "Сохранить настройки",
-    note: "Существующие заказы сохраняют свою валюту. Даты отображаются в выбранном часовом поясе.",
-  },
-};
+import { t } from "../../app/i18n.js";
 export function OrganizationSettings({ shop, onSave }) {
   const [form, setForm] = useState(() =>
     Object.fromEntries(
@@ -54,7 +23,7 @@ export function OrganizationSettings({ shop, onSave }) {
     ),
   );
   const action = useAction(),
-    t = copy[form.locale] || copy.en;
+    tr = (key) => t(key, form.locale);
   const field = (key) => ({
     value: form[key],
     onChange: (e) => setForm({ ...form, [key]: e.target.value }),
@@ -74,19 +43,19 @@ export function OrganizationSettings({ shop, onSave }) {
         });
       }}
     >
-      <h1>{t.title}</h1>
+      <h1>{tr("organization")}</h1>
       <ErrorBox error={action.error} />
-      <Field label={t.name}>
+      <Field label={tr("name")}>
         <input required maxLength={160} {...field("name")} />
       </Field>
-      <Field label={t.locale}>
+      <Field label={tr("locale")}>
         <select {...field("locale")}>
           <option value="en">English</option>
           <option value="pl">Polski</option>
           <option value="ru">Русский</option>
         </select>
       </Field>
-      <Field label={t.zone}>
+      <Field label={tr("timezone")}>
         <input required list="timezones" {...field("timezone")} />
         <datalist id="timezones">
           {[
@@ -101,14 +70,14 @@ export function OrganizationSettings({ shop, onSave }) {
           ))}
         </datalist>
       </Field>
-      <Field label={t.currency}>
+      <Field label={tr("currency")}>
         <select {...field("currency")}>
           {["PLN", "EUR", "GBP", "CZK"].map((v) => (
             <option key={v}>{v}</option>
           ))}
         </select>
       </Field>
-      <Field label={t.country}>
+      <Field label={tr("country")}>
         <input
           required
           pattern="[A-Z]{2}"
@@ -116,8 +85,8 @@ export function OrganizationSettings({ shop, onSave }) {
           {...field("country")}
         />
       </Field>
-      <p>{t.note}</p>
-      <Button disabled={action.busy}>{t.save}</Button>
+      <p>{tr("regionalNote")}</p>
+      <Button disabled={action.busy}>{tr("saveSettings")}</Button>
     </form>
   );
 }

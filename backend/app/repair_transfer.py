@@ -45,6 +45,7 @@ def export(a=Depends(access)):
             }
             for model in [
                 Customer,
+                Site,
                 Device,
                 FormTemplate,
                 Workflow,

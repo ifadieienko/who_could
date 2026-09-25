@@ -20,3 +20,11 @@ and matching files backup if rollback is required.
 Automated migration gates cover an empty database, the populated pre-workshop
 0008 fixture, and a populated 0010 fixture. The latter compares every original
 column across the upgrade, allowing only additive permission aliases.
+
+0012 extends `repair_devices` into the generic Asset model in place. Existing
+primary keys and order foreign keys do not change. `name` starts from `model`;
+new asset timestamps on historic records indicate migration time, not a known
+original purchase/intake date. Customers gain person/company details. Optional
+sites are stored separately. Both devices and sites stay within their tenant;
+asset external IDs are unique per tenant when supplied. Asset/customer removal
+is not exposed; asset retirement preserves history.

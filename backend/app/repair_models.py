@@ -12,7 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, synonym
 from .models import Base
 
 
@@ -170,6 +170,15 @@ class RepairOrder(Base):
         ForeignKey("repair_orders.id"), nullable=True
     )
     currency: Mapped[str] = mapped_column(String(3), default="PLN")
+    vertical_key: Mapped[str] = mapped_column(String(30), default="repair")
+    job_type: Mapped[str] = mapped_column(String(80), default="repair")
+    priority: Mapped[str] = mapped_column(String(20), default="normal")
+    site_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customer_sites.id"), nullable=True
+    )
+    asset_id = synonym("device_id")
+    organization_id = synonym("workshop_id")
+    description = synonym("problem")
     problem: Mapped[str] = mapped_column(Text, default="")
     condition: Mapped[str] = mapped_column(Text, default="")
     accessories: Mapped[str] = mapped_column(Text, default="")

@@ -52,3 +52,16 @@ service entries will be attached by their later domain modules.
 
 New customer/asset screens use `app/i18n.js` and shared EN/PL/RU dictionaries.
 DE/CS/SK are reserved but not presented as translated languages.
+
+## Generic job compatibility API
+
+`Job` maps to `repair_orders`. `/v2/jobs` creates work for an existing active
+asset, with description, type, priority, optional site, due date and versioned
+form/workflow selections. Its lifecycle URLs use the very same handlers as
+`/v2/orders`: no alternate permission, quota, payment or version-check path.
+Responses expose generic identifiers and retain repair names during migration.
+Existing repairs default to vertical/type `repair` and priority `normal`.
+
+The asset card can start a generic job. Job creation/list screens use shared
+localization. Detailed lifecycle screens remain shared with repairs while the
+subsequent form/workflow/vertical work replaces their repair-specific labels.

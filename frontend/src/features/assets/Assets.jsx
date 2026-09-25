@@ -65,6 +65,11 @@ export function Assets({ can, id }) {
             <>
               <div className="w-page-head">
                 <h1>{asset.name || asset.model}</h1>
+                {can("jobs.create") && (
+                  <Button onClick={() => go("/jobs/new?asset=" + asset.id)}>
+                    {t("newJob")}
+                  </Button>
+                )}
                 <Button
                   onClick={() =>
                     action.run(() => printDocument(`/v2/assets/${id}/label`))

@@ -9,7 +9,7 @@ import { label } from "../forms/editor-options.js";
 import { money, statusNames, time } from "../../app/format.js";
 import { useState } from "react";
 
-export function Finance({ order: o, can, onUpdate }) {
+export function Finance({ order: o, can, onUpdate, apiPrefix = "/v2/orders" }) {
   const [lines, setLines] = useState([
       { description: "", quantity: 1, unit_cents: 0 },
     ]),
@@ -49,7 +49,7 @@ export function Finance({ order: o, can, onUpdate }) {
               onSubmit={(e) => {
                 e.preventDefault();
                 a.run(async () => {
-                  const r = await call("/v2/orders/" + o.id + "/estimates", {
+                  const r = await call(apiPrefix + "/" + o.id + "/estimates", {
                     method: "POST",
                     body: { version: o.version, lines },
                   });
@@ -150,7 +150,7 @@ export function Finance({ order: o, can, onUpdate }) {
               e.preventDefault();
               a.run(async () => {
                 onUpdate(
-                  await call("/v2/orders/" + o.id + "/payments", {
+                  await call(apiPrefix + "/" + o.id + "/payments", {
                     method: "POST",
                     body: {
                       version: o.version,

@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { Children, cloneElement, isValidElement, useState } from "react";
 
 export function Field({ label, children }) {
   return (
     <label className="w-field">
       <span>{label}</span>
-      {children}
+      {Children.map(children, (child) =>
+        isValidElement(child) &&
+        ["input", "select", "textarea"].includes(child.type)
+          ? cloneElement(child, {
+              "aria-label":
+                child.props["aria-label"] ??
+                (typeof label === "string" ? label : undefined),
+            })
+          : child,
+      )}
     </label>
   );
 }

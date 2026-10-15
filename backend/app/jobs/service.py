@@ -7,11 +7,11 @@ from uuid import uuid4
 from app.core.tenancy.records import scoped
 from app.forms.service import normalize_values
 from app.plans import enforce_limit
-from app.repair_access import dt, event, utc
-from app.repair_models import Workshop, Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow
+from app.repair_access import dt, event, utc, touch
+from app.repair_models import Workshop, Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow, Site
 
 
-def create_order_record(s, p, a):
+def create_order_record(s, p, a, *, job_metadata=None):
     enforce_limit(s, a.workshop_id, "open_orders")
     t = scoped(s, FormTemplate, p.template_id, a)
     w = scoped(s, Workflow, p.workflow_id, a)
@@ -63,7 +63,11 @@ def create_order_record(s, p, a):
         )
         s.add(d)
         s.flush()
+    metadata = job_metadata or {}
+    if metadata.get("site_id") is not None:
+        validate_job_site(s, metadata["site_id"], c.id, a)
     o = RepairOrder(
+        **metadata,
         public_id=str(uuid4()),
         currency=s.get(Workshop, a.workshop_id).currency,
         workshop_id=a.workshop_id,
@@ -94,7 +98,7 @@ def create_order_record(s, p, a):
     o.values = normalize_values(s, o, p.values, a, required=not p.draft)
     if not p.draft:
         freeze_intake(s, o)
-    event(s, a, o, "order.created", {"draft": p.draft})
+    event(s, a, o, "order.created", {"draft": p.draft, **metadata})
     return o
 
 
@@ -115,3 +119,62 @@ def freeze_intake(s, o):
         ],
     }
 
+
+
+def validate_job_site(s, site_id, customer_id, a):
+    a.require("customers.read")
+    site = scoped(s, Site, site_id, a)
+    if site.customer_id != customer_id:
+        raise HTTPException(422, "Site belongs to another customer")
+
+
+def edit_order_record(s, o, p, a):
+    if "site_id" in p.model_fields_set:
+        a.require("customers.read")
+        if p.site_id is not None:
+            validate_job_site(s, p.site_id, o.customer_id, a)
+    if o.status in {"issued", "cancelled"}:
+        raise HTTPException(409, "Заказ закрыт")
+    changes = {
+        k: v
+        for k, v in p.model_dump(
+            exclude_unset=True, exclude={"version", "reason", "values"}
+        ).items()
+        if getattr(o, k) != v
+    }
+    if (
+        o.status != "draft"
+        and any(k in changes for k in ["problem", "condition", "accessories"])
+        and len(p.reason) < 3
+    ):
+        raise HTTPException(422, "Укажите причину исправления приёмки")
+    previous = dict(o.values)
+    metadata_changes = {
+        k: {
+            "before": str(getattr(o, k)) if k == "due_at" else getattr(o, k),
+            "after": str(v) if k == "due_at" else v,
+        }
+        for k, v in changes.items()
+    }
+    if p.values is not None:
+        o.values = normalize_values(s, o, p.values, a)
+    value_changes = {
+        k: {"before": previous.get(k), "after": v}
+        for k, v in o.values.items()
+        if v != previous.get(k)
+    }
+    for k, v in changes.items():
+        setattr(o, k, dt(v) if k == "due_at" else v)
+    touch(o)
+    event(
+        s,
+        a,
+        o,
+        "order.edited",
+        {
+            "fields": list(changes) + (["values"] if value_changes else []),
+            "reason": p.reason,
+            "metadata_changes": metadata_changes,
+            "value_changes": value_changes,
+        },
+    )

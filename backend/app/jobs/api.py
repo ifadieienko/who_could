@@ -1,12 +1,12 @@
-"""Generic, read-only job API over the existing repair lifecycle.
-
-No snapshots are reconstructed from mutable organization or asset settings.
-Writes remain on the compatibility API until the generic lifecycle is introduced.
-"""
+"""Generic job reads and writes sharing the existing repair lifecycle."""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from app.database import db
 from app.jobs.models import Job
+from app.jobs.schemas import JobInput, JobEdit
+from app.jobs.service import create_order_record, edit_order_record
+from app.repair_schemas import OrderInput
+from app.repair_models import Workshop
 from app.jobs.serialization import detail, summary
 from app.repair_access import access, get_order, order_filters
 
@@ -17,6 +17,8 @@ def serialize(s, job, a, full=False):
     data = detail(s, job, a) if full else summary(s, job, a)
     data["organization_id"] = job.workshop_id
     data["asset_id"] = job.device_id
+    data.update(vertical_key=job.vertical_key, job_type=job.job_type,
+                priority=job.priority, site_id=job.site_id)
     data["description"] = data.pop("problem")
     data.pop("device_id", None)
     return data
@@ -69,3 +71,30 @@ def attachments(id: str, before: int | None = Query(None, ge=1), a=Depends(acces
     with db() as s:
         data = detail(s, get_order(s, a, id), a, attachments_before=before)
         return {"items": data["attachments"], "next": data["attachments_next"]}
+
+
+@router.post("", status_code=201)
+def create_job(p: JobInput, a=Depends(access)):
+    a.require("jobs.create")
+    a.require("customers.read")
+    a.write()
+    legacy = p.model_dump(exclude={"asset_id", "description", "job_type", "priority", "site_id"})
+    legacy.update(device_id=p.asset_id, problem=p.description)
+    with db() as s:
+        organization = s.get(Workshop, a.organization_id)
+        record = create_order_record(s, OrderInput(**legacy), a, job_metadata={
+            "vertical_key": organization.vertical_key,
+            "job_type": p.job_type,
+            "priority": p.priority,
+            "site_id": p.site_id,
+        })
+        return serialize(s, record, a, full=True)
+
+
+@router.patch("/{id}")
+def edit_job(id: str, p: JobEdit, a=Depends(access)):
+    a.require("jobs.edit")
+    with db() as s:
+        record = get_order(s, a, id, p.version)
+        edit_order_record(s, record, p, a)
+        return serialize(s, record, a, full=True)

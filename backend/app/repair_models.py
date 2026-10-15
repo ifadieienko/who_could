@@ -169,6 +169,10 @@ class RepairOrder(Base):
     warranty_of: Mapped[int | None] = mapped_column(
         ForeignKey("repair_orders.id"), nullable=True
     )
+    vertical_key: Mapped[str] = mapped_column(String(40), default="repair")
+    job_type: Mapped[str] = mapped_column(String(80), default="repair")
+    priority: Mapped[str] = mapped_column(String(20), default="normal")
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("customer_sites.id"), nullable=True)
     currency: Mapped[str] = mapped_column(String(3), default="PLN")
     problem: Mapped[str] = mapped_column(Text, default="")
     condition: Mapped[str] = mapped_column(Text, default="")

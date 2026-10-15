@@ -32,7 +32,7 @@ rejected rather than silently shifted.
 
 ## Still scheduled in the supplied development plan
 
-Generic job APIs, form instances and advanced field types,
+Generic job writes and metadata, form instances and advanced field types,
 generic workflow guards, PDF documents, scheduling, jewellery and calibration,
 full English/Polish localization, invitations and storage hardening are not
 claimed complete by this foundation. Organization settings currently have
@@ -52,3 +52,23 @@ service entries will be attached by their later domain modules.
 
 New customer/asset screens use `app/i18n.js` and shared EN/PL/RU dictionaries.
 DE/CS/SK are reserved but not presented as translated languages.
+
+## Generic job reads (first slice)
+
+`GET /v2/jobs` exposes existing repair records through a generic read contract.
+It accepts `after` (the numeric job number), `limit` (1–100), `status`,
+`asset_id`, and `customer_id`; the response is `{items, next}`. Ordering by
+immutable numeric ID prevents edits from moving records between cursor pages.
+Filtering by customer additionally requires `customers.read`.
+
+`GET /v2/jobs/{public_id}` returns the existing permission-filtered detail with
+`organization_id`, `asset_id`, and `description` replacing the top-level
+`device_id` and `problem` names. Public IDs, numbers, snapshots, statuses and
+versions remain unchanged. `/events` and `/attachments` retain the compatibility
+API's descending `before` cursors and field/finance redaction. All reads enforce
+organization membership and all/own job scope. The `Job` model currently aliases
+the existing mapper; no new table or migration is introduced.
+
+This is not the completed generic job phase: writes, immutable vertical/job type
+metadata, job site, priority, and a fully generic lifecycle remain future work.
+The repair UI and `/v2/orders` continue to use their existing contract.

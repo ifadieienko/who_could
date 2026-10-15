@@ -1,3 +1,4 @@
+import { NewJob } from "./features/jobs/NewJob.jsx";
 import { Auth, ResetPassword } from "./features/auth/Auth.jsx";
 import { Billing } from "./features/billing/Billing.jsx";
 import { Button, ErrorBox, useAction } from "./components/workshop/ui.jsx";
@@ -153,6 +154,8 @@ export default function WorkshopApp() {
           <Billing />
         ) : path === "/warehouse" ? (
           <Warehouse user={user} />
+        ) : path === "/jobs/new" ? (
+          <NewJob can={can} />
         ) : path === "/orders/new" ? (
           <NewOrder can={can} />
         ) : /^\/orders\/[^/]+$/.test(path) ? (

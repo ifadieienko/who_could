@@ -1,3 +1,4 @@
+import { t } from "../../app/i18n.js";
 import { Button, ErrorBox, useAction } from "../../components/workshop/ui.jsx";
 import { call } from "../../repair-api.js";
 import { empty, label } from "../forms/editor-options.js";
@@ -38,6 +39,11 @@ export function Orders({ can }) {
             Заказы <span>{data.total}</span>
           </h1>
         </div>
+        {can("jobs.create") && can("assets.read") && can("customers.read") && (
+          <Button secondary onClick={() => go("/jobs/new")}>
+            {t("newAssetJob")}
+          </Button>
+        )}
         {can("orders.create") && (
           <Button onClick={() => go("/orders/new")}>
             + Принять устройство

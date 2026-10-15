@@ -1,3 +1,4 @@
+import { JobMetadata } from "./JobMetadata.jsx";
 import {
   Button,
   ErrorBox,
@@ -160,6 +161,7 @@ export function OrderDetail({ id, can, user }) {
         </div>
       </header>
       <ErrorBox error={a.error} />
+      <JobMetadata id={id} version={o.version} can={can} onSaved={refresh} />
       <div className="w-order-summary">
         <div>
           <small>Клиент</small>

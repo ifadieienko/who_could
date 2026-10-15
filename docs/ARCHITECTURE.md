@@ -91,5 +91,19 @@ including site and priority. Old API/import creation remains a repair job.
 Historical sites are not inferred from mutable asset records during migration.
 
 The repair UI and `/v2/orders` retain their contract. Generic lifecycle actions,
-UI metadata controls, arbitrary form slots and vertical workflows remain later
-work; custom job types alone do not enable jewellery/calibration functionality.
+arbitrary form slots and vertical workflows remain later work; custom job types alone do not enable jewellery/calibration functionality.
+
+## Job UI
+
+The job queue links to `/jobs/new` for existing customer/asset records. The form
+supports repair, inspection and maintenance job types, priority, explicit site,
+intake/workflow selection and required stage-form revisions. Customer changes
+clear asset/site selections. Asset search and asset/site pagination use bounded
+API pages. Creating an asset job requires create-job, customer-read and asset-read
+permissions in the UI; the backend independently validates each relationship.
+
+Order details display immutable job type and editable priority/site in a separate
+settings panel. Save uses the generic API with its loaded version; conflicts are
+shown without overwriting server changes. Reloading the order refreshes settings.
+Closed/read-only orders disable controls. New text has EN/PL/RU translations.
+The existing intake form and lifecycle actions remain available unchanged.

@@ -9,7 +9,7 @@ from app.database import db
 from app.forms.service import form_proxy, normalize_values
 from app.jobs.finance_service import latest_estimate, paid, queue_email
 from app.jobs.serialization import detail, summary
-from app.jobs.service import create_order_record, freeze_intake
+from app.jobs.service import create_order_record, edit_order_record, freeze_intake
 from app.plans import enforce_limit
 from app.repair_access import access, dt, event, get_order, order_filters, touch, utc
 from app.repair_models import Device, Membership, RepairOrder
@@ -128,51 +128,7 @@ def edit_order(id: str, p: OrderEdit, a=Depends(access)):
     a.require("orders.edit")
     with db() as s:
         o = get_order(s, a, id, p.version)
-        if o.status in {"issued", "cancelled"}:
-            raise HTTPException(409, "Заказ закрыт")
-        changes = {
-            k: v
-            for k, v in p.model_dump(
-                exclude_unset=True, exclude={"version", "reason", "values"}
-            ).items()
-            if getattr(o, k) != v
-        }
-        if (
-            o.status != "draft"
-            and any(k in changes for k in ["problem", "condition", "accessories"])
-            and len(p.reason) < 3
-        ):
-            raise HTTPException(422, "Укажите причину исправления приёмки")
-        previous = dict(o.values)
-        metadata_changes = {
-            k: {
-                "before": str(getattr(o, k)) if k == "due_at" else getattr(o, k),
-                "after": str(v) if k == "due_at" else v,
-            }
-            for k, v in changes.items()
-        }
-        if p.values is not None:
-            o.values = normalize_values(s, o, p.values, a)
-        value_changes = {
-            k: {"before": previous.get(k), "after": v}
-            for k, v in o.values.items()
-            if v != previous.get(k)
-        }
-        for k, v in changes.items():
-            setattr(o, k, dt(v) if k == "due_at" else v)
-        touch(o)
-        event(
-            s,
-            a,
-            o,
-            "order.edited",
-            {
-                "fields": list(changes) + (["values"] if value_changes else []),
-                "reason": p.reason,
-                "metadata_changes": metadata_changes,
-                "value_changes": value_changes,
-            },
-        )
+        edit_order_record(s, o, p, a)
         return detail(s, o, a)
 
 
@@ -399,6 +355,10 @@ def warranty(id: str, p: Note, a=Depends(access)):
             device_id=old.device_id,
             warranty_of=old.id,
             currency=old.currency,
+            vertical_key=old.vertical_key,
+            job_type=old.job_type,
+            site_id=old.site_id,
+            priority=old.priority,
             problem=p.text,
             template_snapshot=old.template_snapshot,
             stage_forms={

@@ -28,3 +28,12 @@ original purchase/intake date. Customers gain person/company details. Optional
 sites are stored separately. Both devices and sites stay within their tenant;
 asset external IDs are unique per tenant when supplied. Asset/customer removal
 is not exposed; asset retirement preserves history.
+
+0013 adds `vertical_key`, `job_type`, `priority`, and nullable `site_id` to
+`repair_orders`. Existing jobs receive `repair`, `repair`, `normal`, and NULL.
+No identity, customer/device link, currency, snapshot, history or version changes.
+The migration deliberately does not copy a current asset site into historic jobs.
+Back up the database and uploads and stop application writes before upgrading.
+Run Alembic upgrade to head with the new backend, then restart it; the new model
+requires the new columns. Downgrade is refused; rollback requires the matching
+pre-upgrade code and verified backup.

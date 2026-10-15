@@ -32,7 +32,7 @@ rejected rather than silently shifted.
 
 ## Still scheduled in the supplied development plan
 
-Generic job writes and metadata, form instances and advanced field types,
+Form instances and advanced field types,
 generic workflow guards, PDF documents, scheduling, jewellery and calibration,
 full English/Polish localization, invitations and storage hardening are not
 claimed complete by this foundation. Organization settings currently have
@@ -53,7 +53,7 @@ service entries will be attached by their later domain modules.
 New customer/asset screens use `app/i18n.js` and shared EN/PL/RU dictionaries.
 DE/CS/SK are reserved but not presented as translated languages.
 
-## Generic job reads (first slice)
+## Generic job API
 
 `GET /v2/jobs` exposes existing repair records through a generic read contract.
 It accepts `after` (the numeric job number), `limit` (1–100), `status`,
@@ -67,8 +67,29 @@ Filtering by customer additionally requires `customers.read`.
 versions remain unchanged. `/events` and `/attachments` retain the compatibility
 API's descending `before` cursors and field/finance redaction. All reads enforce
 organization membership and all/own job scope. The `Job` model currently aliases
-the existing mapper; no new table or migration is introduced.
+the existing mapper; migration 0013 adds metadata to that table.
 
-This is not the completed generic job phase: writes, immutable vertical/job type
-metadata, job site, priority, and a fully generic lifecycle remain future work.
-The repair UI and `/v2/orders` continue to use their existing contract.
+`POST /v2/jobs` accepts existing `customer_id` and `asset_id`, optional `site_id`,
+`job_type` (lowercase semantic key, default `repair`), `priority` (`low`, `normal`,
+`high`, `urgent`), `description`, intake template/workflow IDs, stage forms,
+values and the existing intake metadata. It requires `jobs.create` and
+`customers.read`, and enforces the same subscription, quota, form validation and
+snapshot rules as repair creation. Asset and site must belong to the selected
+customer and organization. A job site is explicitly selected; omitting it means
+no site, even if the asset currently has one.
+
+`PATCH /v2/jobs/{public_id}` requires `version` and `jobs.edit`. It updates
+`description`, intake metadata, values, deadline, priority and site. Explicit
+`site_id: null` clears the site; omitted fields remain unchanged. Site changes
+also require `customers.read`. Closed jobs and stale versions are rejected.
+Corrections to accepted intake data require a reason; snapshots are preserved.
+Both APIs share the update service, including locking and append-only audit.
+
+Organization vertical is frozen at creation. Vertical, job type, customer and
+asset cannot be changed by PATCH. Warranty jobs inherit original metadata,
+including site and priority. Old API/import creation remains a repair job.
+Historical sites are not inferred from mutable asset records during migration.
+
+The repair UI and `/v2/orders` retain their contract. Generic lifecycle actions,
+UI metadata controls, arbitrary form slots and vertical workflows remain later
+work; custom job types alone do not enable jewellery/calibration functionality.

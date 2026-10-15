@@ -56,6 +56,7 @@ with engine.connect() as c:
  from app.repair_models import Workshop, RepairOrder
  assert c.execute(select(Workshop.currency)).scalar_one() == 'PLN'
  assert c.execute(select(RepairOrder.currency)).scalar_one() == 'PLN'
+ assert c.execute(select(RepairOrder.vertical_key, RepairOrder.job_type, RepairOrder.priority, RepairOrder.site_id)).one() == ('repair', 'repair', 'normal', None)
 command.check(config)
 '''
 
@@ -67,5 +68,24 @@ class PlatformMigrationTest(unittest.TestCase):
                 cwd=Path(__file__).resolve().parents[1],
                 env={**os.environ, 'WHO_COULD_ENV':'test', 'WHO_COULD_SECRET':'migration-test-secret-at-least-32-characters',
                      'DATABASE_URL':os.environ.get('PLATFORM_MIGRATION_TEST_DATABASE_URL', 'sqlite:///' + directory + '/platform.db')},
+                text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_populated_v12_job_does_not_inherit_mutable_asset_metadata(self):
+        fixture = FIXTURE.replace("command.upgrade(config, 'head')", """
+command.upgrade(config, '0012_assets_customers_sites')
+from sqlalchemy import text
+with engine.begin() as c:
+ c.execute(text("UPDATE workshops SET vertical_key='jewellery'"))
+ c.execute(text("INSERT INTO customer_sites (id,workshop_id,customer_id,name) VALUES (1,1,1,'Current site')"))
+ c.execute(text("UPDATE repair_devices SET site_id=1"))
+command.upgrade(config, 'head')
+""")
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run([sys.executable, '-c', fixture],
+                cwd=Path(__file__).resolve().parents[1],
+                env={**os.environ, 'WHO_COULD_ENV':'test',
+                     'WHO_COULD_SECRET':'migration-test-secret-at-least-32-characters',
+                     'DATABASE_URL':'sqlite:///' + directory + '/v12.db'},
                 text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

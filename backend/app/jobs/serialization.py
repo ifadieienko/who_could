@@ -20,7 +20,7 @@ def summary(s, o, a):
         "number": o.id,
         "currency": o.currency,
         "model": (
-            device.model if device else o.template_snapshot.get("name", "Устройство")
+            (device.model or device.name) if device else o.template_snapshot.get("name", "Устройство")
         ),
         "serial": device.serial if device else "",
         "problem": o.problem,

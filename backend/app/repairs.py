@@ -14,6 +14,7 @@ from app.customers.routes import router as customers_router
 from app.jobs.finance_routes import router as finance_router
 from app.core.mail.routes import router as mail_router
 from app.jobs.routes import router as jobs_router
+from app.jobs.api import router as generic_jobs_router
 
 router = APIRouter(prefix="/v2", tags=["workshops"])
 router.include_router(organizations_router)
@@ -23,3 +24,5 @@ router.include_router(customers_router)
 router.include_router(finance_router)
 router.include_router(mail_router)
 router.include_router(jobs_router)
+
+router.include_router(generic_jobs_router)

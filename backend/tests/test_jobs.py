@@ -15,7 +15,9 @@ class JobReadTest(unittest.TestCase):
     member = fixtures.WorkshopTest.member
 
     def test_existing_order_identity_and_snapshots(self):
-        original = self.order()
+        created = self.order()
+        # Compare persisted reads: MariaDB DATETIME truncates creation microseconds.
+        original = self.c.get('/v2/orders/' + created['id']).json()
         response = self.c.get('/v2/jobs/' + original['id'])
         self.assertEqual(response.status_code, 200, response.text)
         job = response.json()

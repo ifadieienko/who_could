@@ -435,7 +435,7 @@ export function OrderDetail({ id, can, user }) {
           </aside>
         </div>
       )}
-      {o.stage_forms?.[formPhase] && (
+      {formPhase !== null && o.stage_forms?.[formPhase] && (
         <section className="w-panel">
           <h2>
             {o.stage_forms[formPhase].template.name} · v

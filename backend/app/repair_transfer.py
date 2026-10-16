@@ -50,6 +50,7 @@ def export(a=Depends(access)):
                 FormTemplate,
                 Workflow,
                 RepairOrder,
+                JobFormInstance,
                 Estimate,
                 RepairPayment,
                 RepairEvent,

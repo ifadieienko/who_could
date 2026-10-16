@@ -2,6 +2,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from app.database import db
+from app.forms.instances import edit_instance, serialize_instance
+from app.forms.schemas import InstanceEdit
+from app.repair_schemas import FormSlot
+from app.repair_models import JobFormInstance
 from app.jobs.models import Job
 from app.jobs.schemas import JobInput, JobEdit
 from app.jobs.service import create_order_record, edit_order_record
@@ -98,3 +102,24 @@ def edit_job(id: str, p: JobEdit, a=Depends(access)):
         record = get_order(s, a, id, p.version)
         edit_order_record(s, record, p, a)
         return serialize(s, record, a, full=True)
+
+
+@router.get("/{id}/forms")
+def job_forms(id: str, a=Depends(access)):
+    with db() as s:
+        job = get_order(s, a, id)
+        instances = s.scalars(select(JobFormInstance).where(
+            JobFormInstance.job_id == job.id,
+            JobFormInstance.workshop_id == a.workshop_id,
+        ).order_by(JobFormInstance.slot_key)).all()
+        return {"job_version": job.version,
+                "items": [serialize_instance(job, instance, a) for instance in instances]}
+
+
+@router.patch("/{id}/forms/{slot}")
+def edit_job_form(id: str, slot: FormSlot, p: InstanceEdit, a=Depends(access)):
+    a.require("jobs.edit")
+    with db() as s:
+        job = get_order(s, a, id, p.job_version)
+        instance = edit_instance(s, job, slot, p.values, a, form_version=p.version)
+        return {"job_version": job.version, "form": serialize_instance(job, instance, a)}

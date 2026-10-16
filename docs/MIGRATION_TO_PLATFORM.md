@@ -37,3 +37,18 @@ Back up the database and uploads and stop application writes before upgrading.
 Run Alembic upgrade to head with the new backend, then restart it; the new model
 requires the new columns. Downgrade is refused; rollback requires the matching
 pre-upgrade code and verified backup.
+
+
+0014 creates `job_form_instances` and copies every stage form, including custom
+slots, from the frozen job JSON. Original rows, snapshots, receipts and job
+versions are unchanged. Instance versions start at 1; timestamps inherit the
+job timestamps (not an inferred history of individual form edits). Family is
+resolved only from a same-organization template; missing metadata remains NULL.
+The schema and revision always come from the frozen snapshot, never today's
+published template. Intake is not migrated in this step.
+
+Stop all application writers and take a database/files backup before upgrading.
+Deploy 0014 and its matching backend together; do not run an older backend against
+the new schema because it cannot maintain the instance mirror. SQL backups
+include the new table; portable organization exports include its rows as well.
+Rollback requires restoring the backup and matching code, not deleting the table.

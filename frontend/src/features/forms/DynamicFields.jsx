@@ -1,5 +1,6 @@
 import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { Field } from "../../components/workshop/ui.jsx";
+import { conditionMatches } from "./conditions.js";
 import { TableField } from "./TableField.jsx";
 
 export function DynamicFields({
@@ -15,10 +16,7 @@ export function DynamicFields({
       style={{ "--columns": template.layout?.columns || 2 }}
     >
       {template.fields
-        .filter(
-          (f) =>
-            !f.condition || values[f.condition.field] === f.condition.equals,
-        )
+        .filter((f) => conditionMatches(f.condition, values))
         .map((f) => {
           const value = values[f.key] ?? "",
             disabled = f.write_permission && !can(f.write_permission);

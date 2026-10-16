@@ -155,7 +155,7 @@ export function Warehouse({ user }) {
 
   return <div className="warehouse-page">
     <aside className="warehouse-builder manage-card">
-      <div className="warehouse-title"><div><p className="eyebrow">Склад</p><h2>Новая таблица</h2></div><Badge tone="blue">{columns.length} колонок</Badge></div>
+      <div className="warehouse-title"><div><p className="eyebrow">Склад</p><h2>Новая таблица</h2></div><Badge tone="blue">{columns.length} {columns.length % 10 === 1 && columns.length % 100 !== 11 ? "колонка" : columns.length % 10 >= 2 && columns.length % 10 <= 4 && (columns.length % 100 < 12 || columns.length % 100 > 14) ? "колонки" : "колонок"}</Badge></div>
       <p className="warehouse-help">Создайте структуру таблицы. Колонки могут хранить текст, числа, даты, изображения, штрих-коды и QR-коды.</p>
       <form onSubmit={createTable}>
         <Field label="Название таблицы"><input value={tableName} onChange={(e) => setTableName(e.target.value)} maxLength="120" placeholder="Например: Склад телефонов" required /></Field>

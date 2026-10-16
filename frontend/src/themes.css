@@ -569,3 +569,32 @@ hr,
 .w-table-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @keyframes w-table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .w-form-table tbody tr { animation: none; } }
+
+/* Labels keep controls aligned when adjacent fields have multi-line help. */
+.w-field { align-content: start; grid-auto-rows: max-content; }
+.warehouse-page .warehouse-title .badge { color: var(--ink); background: var(--accent-soft); border: 1px solid var(--line); font-weight: 650; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.w-team-panel { padding: 0; overflow: hidden; }
+.w-team-panel > .w-muted { padding: 18px 24px; margin: 0; border-top: 1px solid var(--line); }
+.w-team-scroll { overflow-x: auto; }
+.w-team-table { table-layout: fixed; min-width: 600px; }
+.w-team-table th:first-child { width: 44%; }
+.w-team-table th:nth-child(2) { width: 25%; }
+.w-team-table th + th, .w-team-table td + td { border-left: 1px solid var(--line); }
+.w-team-table td { vertical-align: middle; padding: 22px 24px; }
+.w-team-person { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.w-team-person > div { min-width: 0; overflow-wrap: anywhere; }
+.w-team-avatar { flex: 0 0 42px; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: var(--accent-soft); color: var(--ink); font-weight: 700; }
+.w-team-owner { display: inline-block; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.w-team-access { display: flex; align-items: flex-start; flex-direction: column; gap: 8px; }
+.w-team-status { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); }
+.w-team-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.w-team-status.active::before { background: var(--brand); }
+.w-team-access small { color: var(--muted); }
+
+.w-condition-editor { grid-column: 1 / -1; min-width: 0; }
+.w-condition-editor > small { display: block; color: var(--muted); margin-top: 10px; }
+.w-condition-node { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 12px; margin: 10px 0; background: var(--surface-soft); min-width: 0; }
+.w-condition-rule { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.w-condition-editor button:not(.w-select) { padding: 7px 11px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; color: var(--ink); }
+.w-condition-remove { margin-top: 10px; }
+@media(max-width:760px) { .w-condition-rule { grid-template-columns: 1fr; } }

@@ -5,6 +5,7 @@ import {
   Field,
   useAction,
 } from "../../components/workshop/ui.jsx";
+import { ConditionEditor } from "./ConditionEditor.jsx";
 import { TableColumnsEditor, newColumn } from "./TableColumnsEditor.jsx";
 import { t } from "../../app/i18n.js";
 import { DynamicFields } from "./DynamicFields.jsx";
@@ -275,74 +276,11 @@ export function TemplateEditor() {
                       />
                     </Field>
                     <div className="w-grid">
-                      <Field label="Показывать, если поле">
-                        <SelectControl
-                          value={f.condition?.field || ""}
-                          onChange={(e) =>
-                            change(i, {
-                              condition: e.target.value
-                                ? {
-                                    field: e.target.value,
-                                    equals:
-                                      fields.find(
-                                        (f) => f.key === e.target.value,
-                                      )?.type === "checkbox"
-                                        ? true
-                                        : "",
-                                  }
-                                : null,
-                            })
-                          }
-                        >
-                          <option value="">Всегда</option>
-                          {fields
-                            .filter((x) => x.key !== f.key && !x.condition)
-                            .map((x) => (
-                              <option key={x.key} value={x.key}>
-                                {x.label || x.key}
-                              </option>
-                            ))}
-                        </SelectControl>
-                      </Field>
-                      {f.condition && (
-                        <Field label="Равно (для флажка: true/false)">
-                          {fields.find((x) => x.key === f.condition.field)
-                            ?.type === "checkbox" ? (
-                            <SelectControl
-                              value={String(f.condition.equals)}
-                              onChange={(e) =>
-                                change(i, {
-                                  condition: {
-                                    ...f.condition,
-                                    equals: e.target.value === "true",
-                                  },
-                                })
-                              }
-                            >
-                              <option value="true">Отмечено</option>
-                              <option value="false">Не отмечено</option>
-                            </SelectControl>
-                          ) : (
-                            <input
-                              value={String(f.condition.equals)}
-                              onChange={(e) => {
-                                const p = fields.find(
-                                  (x) => x.key === f.condition.field,
-                                );
-                                change(i, {
-                                  condition: {
-                                    ...f.condition,
-                                    equals:
-                                      p?.type === "number"
-                                        ? Number(e.target.value)
-                                        : e.target.value,
-                                  },
-                                });
-                              }}
-                            />
-                          )}
-                        </Field>
-                      )}
+                      <ConditionEditor
+                        value={f.condition}
+                        onChange={(condition) => change(i, { condition })}
+                        fields={fields.filter((x) => x.key !== f.key)}
+                      />
                       {["read_permission", "write_permission"].map((k) => (
                         <Field
                           key={k}

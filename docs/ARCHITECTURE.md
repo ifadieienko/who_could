@@ -128,8 +128,7 @@ existing job lock. Only value changes increment the form version; unrelated job
 edits do not. The old form endpoint retains its job-version contract and shares
 the same validation, audit and closed-job guards. Organization exports include
 the instance rows. Intake remains on its dedicated snapshot/value path in this
-incremental step. Table fields are described below; richer conditions and
-calculated fields remain future work.
+incremental step. Table fields are described below; richer conditions are described below. Calculated fields remain future work.
 
 A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.
 
@@ -165,3 +164,18 @@ adding/removing rows, keyboard-accessible cells, themed controls and contained
 horizontal scrolling on small screens. New controls have EN/PL/RU strings.
 Printable intake/issue documents render escaped tables from their frozen values.
 No SQL migration is required: table schemas and values use existing JSON columns.
+
+
+### Declarative form conditions
+
+Conditions support `equals`, `not_equals`, `gt`, `gte`, `lt`, `lte`, `contains`,
+and `is_empty`. Leaves use `{field, operator, value}` (no value for is_empty);
+legacy `{field, equals}` snapshots remain supported. Groups use `{all: [...]}`
+or `{any: [...]}`. Limits are 20 total nodes, 10 children per group and depth 3
+(root depth 0). Operands are bounded finite scalars; no code is executed.
+References must point to another unconditional field, and restricted source
+fields require the same read permission on their dependent field. Numeric and
+text operators validate the source type. Browser visibility and server required
+field guards share fixture-tested semantics, including false, zero and missing
+values. Hidden values are retained; hiding a field is not an access permission.
+The editor supports nested groups; calculated fields remain a later step.

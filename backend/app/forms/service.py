@@ -6,6 +6,7 @@ from sqlalchemy import select
 from types import SimpleNamespace
 from app.repair_models import Attachment
 from app.forms.tables import normalize_table
+from app.forms.conditions import matches
 
 
 def visible_fields(o, a):
@@ -75,7 +76,7 @@ def normalize_values(s, o, values, a, required=False, required_keys=()):
     missing = []
     for f in fields:
         c = f.get("condition")
-        if c and result.get(c["field"]) != c["equals"]:
+        if not matches(c, result):
             continue
         if f["type"] == "table" and (required or f["key"] in required_keys):
             spec = {**f, "required": f.get("required") or f["key"] in required_keys}

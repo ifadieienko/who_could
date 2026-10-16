@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from types import SimpleNamespace
 from app.repair_models import Attachment
+from app.forms.tables import normalize_table
 
 
 def visible_fields(o, a):
@@ -23,11 +24,13 @@ def normalize_values(s, o, values, a, required=False, required_keys=()):
     result = dict(o.values or {})
     for key, value in values.items():
         f = by_key[key]
-        if value == result.get(key):
+        if f["type"] != "table" and value == result.get(key):
             continue
         for p in (f.get("read_permission"), f.get("write_permission")):
             if p and p not in a.permissions and value != result.get(key):
                 raise HTTPException(403, "Нет прав на поле " + key)
+        if f["type"] == "table":
+            value = normalize_table(f, value)
         if value is None or value == "":
             result[key] = None
             continue
@@ -74,6 +77,9 @@ def normalize_values(s, o, values, a, required=False, required_keys=()):
         c = f.get("condition")
         if c and result.get(c["field"]) != c["equals"]:
             continue
+        if f["type"] == "table" and (required or f["key"] in required_keys):
+            spec = {**f, "required": f.get("required") or f["key"] in required_keys}
+            normalize_table(spec, result.get(f["key"]), complete=True)
         if (required and f.get("required")) or f["key"] in required_keys:
             v = result.get(f["key"])
             if v is None or v == "" or (f["type"] == "checkbox" and v is not True):

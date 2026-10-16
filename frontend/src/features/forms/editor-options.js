@@ -54,4 +54,5 @@ export const types = {
   image: "Фото",
   select: "Список",
   checkbox: "Флажок",
+  table: "Таблица",
 };

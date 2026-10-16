@@ -128,7 +128,8 @@ existing job lock. Only value changes increment the form version; unrelated job
 edits do not. The old form endpoint retains its job-version contract and shares
 the same validation, audit and closed-job guards. Organization exports include
 the instance rows. Intake remains on its dedicated snapshot/value path in this
-incremental step. Table fields, richer validation and calculations remain next.
+incremental step. Table fields are described below; richer conditions and
+calculated fields remain future work.
 
 A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.
 
@@ -143,3 +144,24 @@ A persistent top-right language selector is available on every application route
 `themes.css` defines shared surface, foreground, focus and accent tokens for light and dark modes. The header appearance popover stores personal preferences in browser local storage; system mode follows OS color-scheme changes. Green, red, violet, blue and amber accents affect navigation and controls, while status badges retain semantic colors.
 
 `SelectControl` adapts existing option children and value/onChange handlers to Base UI Select, with portalled, rounded menus, keyboard navigation, required fields and disabled states. Sidebar open/focus states explicitly set both foreground and background to avoid unreadable text. Playwright covers preference persistence, keyboard selection, mobile overflow and contrast in both themes.
+
+
+### Table fields (Form Engine 2)
+
+A `table` field contains 1–12 uniquely keyed scalar columns and up to 100 rows.
+Supported cells: string/text, number, date, select and checkbox. Numeric columns
+support min/max, decimal precision and display units. Nested tables, attachments,
+formulas and per-column permissions are not part of this step; existing field
+permissions protect the complete table, including audit and document output.
+
+The server rejects unknown columns, malformed types, nonfinite/out-of-range
+numbers, excessive precision and oversized rows/text. Draft rows may omit
+required cells; acceptance/transition/issue guards validate required cells and
+minimum rows against the frozen schema. Arrays are replaced as a whole under
+the existing job/form version locks. Zero and false remain meaningful values.
+
+The template editor configures columns and row bounds. Dynamic forms support
+adding/removing rows, keyboard-accessible cells, themed controls and contained
+horizontal scrolling on small screens. New controls have EN/PL/RU strings.
+Printable intake/issue documents render escaped tables from their frozen values.
+No SQL migration is required: table schemas and values use existing JSON columns.

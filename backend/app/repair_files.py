@@ -204,7 +204,7 @@ def document(id: str, kind: str = "intake", a=Depends(access)):
                 continue
             value = snapshot.get("values", {}).get(f["key"])
             if value is not None:
-                rows.append((f["label"], str(value)))
+                rows.append((f["label"], (f, value)))
         if kind == "issue":
             for phase, form in snapshot.get("stage_forms", {}).items():
                 for spec in form["template"].get("fields", []):
@@ -218,15 +218,16 @@ def document(id: str, kind: str = "intake", a=Depends(access)):
                         rows.append(
                             (
                                 form["template"]["name"] + " · " + spec["label"],
-                                str(value),
+                                (spec, value),
                             )
                         )
+        from app.forms.printing import printable_value
         body = "".join(
-            f"<tr><th>{html.escape(k)}</th><td>{html.escape(v)}</td></tr>"
+            f"<tr><th>{html.escape(k)}</th><td>{printable_value(*v) if isinstance(v, tuple) else html.escape(v)}</td></tr>"
             for k, v in rows
         )
         return HTMLResponse(
-            '<!doctype html><meta charset="utf-8"><title>Документ заказа</title><style>@page{size:A4;margin:18mm}body{font:14px sans-serif}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #ddd;text-align:left;padding:10px;white-space:pre-wrap}th{width:30%}footer{margin-top:60px}</style><h1>'
+            '<!doctype html><meta charset="utf-8"><title>Документ заказа</title><style>@page{size:A4;margin:18mm}body{font:14px sans-serif}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #ddd;text-align:left;padding:10px;white-space:pre-wrap}th{width:30%}.form-table th{width:auto}.form-table{font-size:12px}footer{margin-top:60px}</style><h1>'
             + ("Акт приёма" if kind == "intake" else "Акт выдачи")
             + "</h1><table>"
             + body

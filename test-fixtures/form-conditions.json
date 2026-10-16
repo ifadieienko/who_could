@@ -1,0 +1,758 @@
+[
+  {
+    "condition": null,
+    "values": {},
+    "expected": true
+  },
+  {
+    "condition": {},
+    "values": {},
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "equals": true
+    },
+    "values": {
+      "x": true
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "equals": true
+    },
+    "values": {
+      "x": 1
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "equals",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "not_equals",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gt",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "gte",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lt",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "lte",
+      "value": 5
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": null
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "contains",
+      "value": "abc"
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": null
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": 0
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": 5
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": 10
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": false
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": "abc"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": "abcd"
+    },
+    "expected": false
+  },
+  {
+    "condition": {
+      "field": "x",
+      "operator": "is_empty"
+    },
+    "values": {
+      "x": ""
+    },
+    "expected": true
+  },
+  {
+    "condition": {
+      "all": [
+        {
+          "field": "x",
+          "operator": "gte",
+          "value": 5
+        },
+        {
+          "any": [
+            {
+              "field": "y",
+              "equals": true
+            },
+            {
+              "field": "note",
+              "operator": "contains",
+              "value": "yes"
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "x": 5,
+      "y": false,
+      "note": "yes please"
+    },
+    "expected": true
+  }
+]

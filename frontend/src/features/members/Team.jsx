@@ -43,56 +43,81 @@ export function Team({ user }) {
     <>
       <h1>Команда мастерской</h1>
       <ErrorBox error={a.error} />
-      <section className="w-panel">
-        <table className="w-table">
-          <thead>
-            <tr>
-              <th>Сотрудник</th>
-              <th>Роль</th>
-              <th>Доступ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m) => (
-              <tr key={m.id}>
-                <td>
-                  {m.name}
-                  <small>{m.email}</small>
-                </td>
-                <td>
-                  <SelectControl
-                    disabled={m.owner || a.busy}
-                    value={m.role_id}
-                    onChange={(e) =>
-                      a.run(() =>
-                        change(m, { role_id: Number(e.target.value) }),
-                      )
-                    }
-                  >
-                    {roles
-                      .filter((r) => !r.owner || m.owner)
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                  </SelectControl>
-                </td>
-                <td>
-                  <Button
-                    secondary
-                    disabled={m.owner || m.id === user.id || a.busy}
-                    onClick={() =>
-                      a.run(() => change(m, { active: !m.active }))
-                    }
-                  >
-                    {m.active ? "Отключить" : "Включить"}
-                  </Button>
-                </td>
+      <section className="w-panel w-team-panel">
+        <div className="w-team-scroll">
+          <table className="w-table w-team-table">
+            <thead>
+              <tr>
+                <th>Сотрудник</th>
+                <th>Роль</th>
+                <th>Доступ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <div className="w-team-person">
+                      <span className="w-team-avatar" aria-hidden="true">
+                        {m.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <div>
+                        <strong>{m.name}</strong>
+                        <small>{m.email}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {m.owner ? (
+                      <span className="w-team-owner">Владелец</span>
+                    ) : (
+                      <SelectControl
+                        aria-label={`Роль: ${m.name}`}
+                        disabled={a.busy}
+                        value={m.role_id}
+                        onChange={(e) =>
+                          a.run(() =>
+                            change(m, { role_id: Number(e.target.value) }),
+                          )
+                        }
+                      >
+                        {roles
+                          .filter((r) => !r.owner || m.owner)
+                          .map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                      </SelectControl>
+                    )}
+                  </td>
+                  <td>
+                    <div className="w-team-access">
+                      <span
+                        className={`w-team-status ${m.active ? "active" : "inactive"}`}
+                      >
+                        {m.active ? "Доступ открыт" : "Доступ закрыт"}
+                      </span>
+                      {m.owner ? (
+                        <small>Доступ владельца защищён</small>
+                      ) : (
+                        <Button
+                          secondary
+                          disabled={m.id === user.id || a.busy}
+                          onClick={() =>
+                            a.run(() => change(m, { active: !m.active }))
+                          }
+                        >
+                          {m.active ? "Отключить" : "Включить"}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="w-muted">
           Отключение доступа сохраняет историю сотрудника и все заказы.
         </p>

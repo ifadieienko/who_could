@@ -10,6 +10,7 @@ from pydantic import (
     model_validator,
 )
 from .repair_defaults import PERMISSIONS
+from .forms.conditions import condition_leaves
 
 
 class Strict(BaseModel):
@@ -71,11 +72,8 @@ class FieldSpec(Strict):
                 raise ValueError("Unknown permission")
         if self.type == "select" and not self.options:
             raise ValueError("Select needs options")
-        if self.condition and (
-            set(self.condition) != {"field", "equals"}
-            or not isinstance(self.condition["field"], str)
-        ):
-            raise ValueError("Condition requires field and equals")
+        if self.condition is not None:
+            condition_leaves(self.condition)
         return self
 
 
@@ -104,17 +102,19 @@ class TemplateInput(Strict):
         if len(keys) != len(set(keys)):
             raise ValueError("Duplicate field keys")
         for f in self.fields:
-            if f.condition:
-                if f.condition["field"] not in keys or f.condition["field"] == f.key:
-                    raise ValueError("Invalid condition reference")
-                parent = next(x for x in self.fields if x.key == f.condition["field"])
-                if parent.condition:
-                    raise ValueError("Nested conditions are not supported")
-                if (
-                    parent.read_permission
-                    and parent.read_permission != f.read_permission
-                ):
-                    raise ValueError("Condition cannot expose a restricted field")
+            if f.condition is not None:
+                for key, operator, value in condition_leaves(f.condition):
+                    if key not in keys or key == f.key:
+                        raise ValueError("Invalid condition reference")
+                    parent = next(x for x in self.fields if x.key == key)
+                    if parent.condition is not None:
+                        raise ValueError("Conditions must reference unconditional fields")
+                    if parent.read_permission and parent.read_permission != f.read_permission:
+                        raise ValueError("Condition cannot expose a restricted field")
+                    if operator in {"gt", "gte", "lt", "lte"} and parent.type != "number":
+                        raise ValueError("Numeric comparisons need a number field")
+                    if operator == "contains" and parent.type not in {"string", "text", "select"}:
+                        raise ValueError("Contains needs a text field")
         return self
 
 

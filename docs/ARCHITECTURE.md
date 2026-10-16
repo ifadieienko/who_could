@@ -128,7 +128,8 @@ existing job lock. Only value changes increment the form version; unrelated job
 edits do not. The old form endpoint retains its job-version contract and shares
 the same validation, audit and closed-job guards. Organization exports include
 the instance rows. Intake remains on its dedicated snapshot/value path in this
-incremental step. Table fields, richer validation and calculations remain next.
+incremental step. Table fields are described below; richer conditions and
+calculated fields remain future work.
 
 A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.
 

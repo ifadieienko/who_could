@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { JobMetadata } from "./JobMetadata.jsx";
 import {
   Button,
@@ -179,7 +180,7 @@ export function OrderDetail({ id, can, user }) {
         <div>
           <small>Исполнитель</small>
           {can("orders.assign") ? (
-            <select
+            <SelectControl
               disabled={a.busy || !editable}
               value={o.assigned_to || ""}
               onChange={(e) =>
@@ -194,7 +195,7 @@ export function OrderDetail({ id, can, user }) {
                     {m.name}
                   </option>
                 ))}
-            </select>
+            </SelectControl>
           ) : (
             <>
               <strong>
@@ -328,7 +329,7 @@ export function OrderDetail({ id, can, user }) {
             {editable && o.status !== "draft" && can("orders.transition") && (
               <>
                 <Field label="Перевести на этап">
-                  <select
+                  <SelectControl
                     value={target}
                     onChange={(e) => {
                       setTarget(e.target.value);
@@ -341,7 +342,7 @@ export function OrderDetail({ id, can, user }) {
                         {x.name}
                       </option>
                     ))}
-                  </select>
+                  </SelectControl>
                 </Field>
                 {selected?.requires_quote && (
                   <p className="w-muted">
@@ -481,7 +482,7 @@ export function OrderDetail({ id, can, user }) {
           <h2>Состояние, комплектность и результаты</h2>
           {editable && can("orders.edit") && (
             <div className="w-toolbar">
-              <select
+              <SelectControl
                 aria-label="Этап фотографии"
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
@@ -502,7 +503,7 @@ export function OrderDetail({ id, can, user }) {
                       {form.template.name}
                     </option>
                   ))}
-              </select>
+              </SelectControl>
               <input
                 aria-label="Добавить фотографию"
                 type="file"

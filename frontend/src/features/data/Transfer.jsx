@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -67,7 +68,7 @@ export function Transfer() {
             Скачать пример CSV
           </Button>
           <Field label="Тип данных">
-            <select
+            <SelectControl
               value={kind}
               onChange={(e) => {
                 setKind(e.target.value);
@@ -76,10 +77,10 @@ export function Transfer() {
             >
               <option value="orders">Заказы</option>
               <option value="customers">Клиенты</option>
-            </select>
+            </SelectControl>
           </Field>
           <Field label="Форма">
-            <select
+            <SelectControl
               value={template}
               onChange={(e) => {
                 setTemplate(e.target.value);
@@ -91,10 +92,10 @@ export function Transfer() {
                   {t.name}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </Field>
           <Field label="Процесс">
-            <select
+            <SelectControl
               value={workflow}
               onChange={(e) => {
                 setWorkflow(e.target.value);
@@ -106,7 +107,7 @@ export function Transfer() {
                   {w.name}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </Field>
           <Field label="CSV файл">
             <input

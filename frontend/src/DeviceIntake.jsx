@@ -1,3 +1,4 @@
+import { SelectControl } from "./components/workshop/SelectControl.jsx";
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 import { Badge } from './components/Badge.jsx';
@@ -177,9 +178,9 @@ export function DeviceIntake({ user }) {
       </div>
 
       {!editingOrder && <Field label="Форма приёмки" hint="Шаблон данных устройства">
-        <select value={selectedFormId} onChange={(e) => { setSelectedFormId(e.target.value); setOrderValues({}); }}>
+        <SelectControl value={selectedFormId} onChange={(e) => { setSelectedFormId(e.target.value); setOrderValues({}); }}>
           {forms.map((form) => <option value={form.id} key={form.id}>{form.name}</option>)}
-        </select>
+        </SelectControl>
       </Field>}
 
       {editingOrder && !editingOrder.form_id && <p className="intake-snapshot-note">Исходный шаблон был удалён. Заказ открыт по сохранённому снимку формы.</p>}
@@ -220,9 +221,9 @@ export function DeviceIntake({ user }) {
             {fields.map((field, index) => <div className="intake-field-row" key={index}>
               <span className="intake-index">{index + 1}</span>
               <input maxLength="120" value={field.name} onChange={(e) => changeField(index, 'name', e.target.value)} placeholder="Название поля" required />
-              <select value={field.field_type} onChange={(e) => changeField(index, 'field_type', e.target.value)}>
+              <SelectControl value={field.field_type} onChange={(e) => changeField(index, 'field_type', e.target.value)}>
                 {FIELD_TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-              </select>
+              </SelectControl>
               <Button type="button" variant="ghost" onClick={() => removeField(index)}>Удалить</Button>
             </div>)}
           </div>

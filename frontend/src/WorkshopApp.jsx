@@ -1,3 +1,4 @@
+import { SelectControl } from "./components/workshop/SelectControl.jsx";
 import { NewJob } from "./features/jobs/NewJob.jsx";
 import { Auth, ResetPassword } from "./features/auth/Auth.jsx";
 import { Billing } from "./features/billing/Billing.jsx";
@@ -18,6 +19,7 @@ import { useEffect, useState } from "react";
 import "@fontsource-variable/geist";
 import "./workshop.css";
 import "./design.css";
+import "./themes.css";
 import {
   LayoutDashboard,
   Files,
@@ -145,7 +147,7 @@ export default function WorkshopApp() {
             Who Could<small>{t("workspace")}</small>
           </span>
         </div>
-        <select
+        <SelectControl
           aria-label={t("organization")}
           value={selected || ""}
           onChange={(e) => {
@@ -159,7 +161,7 @@ export default function WorkshopApp() {
               {w.name}
             </option>
           ))}
-        </select>
+        </SelectControl>
         <nav>
           {nav.map(([url, name]) => {
             const Icon = navigationIcons[url];

@@ -1,3 +1,4 @@
+import { SelectControl } from "./components/workshop/SelectControl.jsx";
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 import { Badge } from './components/Badge.jsx';
@@ -162,9 +163,9 @@ export function Warehouse({ user }) {
           {columns.map((column, index) => <div className="warehouse-column-row" key={index}>
             <span>{index + 1}</span>
             <input value={column.name} onChange={(e) => changeColumn(index, 'name', e.target.value)} maxLength="120" placeholder="Название колонки" required />
-            <select value={column.field_type} onChange={(e) => changeColumn(index, 'field_type', e.target.value)}>
+            <SelectControl value={column.field_type} onChange={(e) => changeColumn(index, 'field_type', e.target.value)}>
               {TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-            </select>
+            </SelectControl>
             <Button type="button" variant="ghost" onClick={() => removeColumn(index)}>×</Button>
           </div>)}
         </div>

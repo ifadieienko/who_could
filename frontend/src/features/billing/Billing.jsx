@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { Button, ErrorBox, useAction } from "../../components/workshop/ui.jsx";
 import { call } from "../../repair-api.js";
 import { label } from "../forms/editor-options.js";
@@ -83,7 +84,7 @@ export function Billing() {
             <div className="w-actions">
               {!data.has_subscription && (
                 <>
-                  <select
+                  <SelectControl
                     aria-label="Тариф подписки"
                     value={selectedPlan}
                     onChange={(e) => setSelectedPlan(e.target.value)}
@@ -98,7 +99,7 @@ export function Billing() {
                         заказов
                       </option>
                     ))}
-                  </select>
+                  </SelectControl>
                   <Button
                     disabled={
                       !data.plans.find((p) => p.code === selectedPlan)

@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -81,7 +82,7 @@ export function NewOrder() {
         <ErrorBox error={a.error} />
         <div className="w-grid">
           <Field label="Форма приёма">
-            <select
+            <SelectControl
               required
               value={form.template_id}
               onChange={(e) => update("template_id", e.target.value)}
@@ -93,10 +94,10 @@ export function NewOrder() {
                     {t.name} · v{t.revision}
                   </option>
                 ))}
-            </select>
+            </SelectControl>
           </Field>
           <Field label="Процесс ремонта">
-            <select
+            <SelectControl
               required
               value={form.workflow_id}
               onChange={(e) => update("workflow_id", e.target.value)}
@@ -106,7 +107,7 @@ export function NewOrder() {
                   {w.name} · v{w.revision}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </Field>
         </div>
         <div className="w-grid three">
@@ -131,7 +132,7 @@ export function NewOrder() {
                 }[phase] || phase
               }
             >
-              <select
+              <SelectControl
                 value={form.stage_forms[phase] || ""}
                 onChange={(e) => {
                   const selected = { ...form.stage_forms };
@@ -151,7 +152,7 @@ export function NewOrder() {
                       {t.name} · v{t.revision}
                     </option>
                   ))}
-              </select>
+              </SelectControl>
             </Field>
           ))}
         </div>
@@ -174,7 +175,7 @@ export function NewOrder() {
               )
             }
           />
-          <select
+          <SelectControl
             aria-label="Существующий клиент"
             value={form.customer_id}
             onChange={(e) => {
@@ -195,7 +196,7 @@ export function NewOrder() {
                 {c.name} · {c.phone}
               </option>
             ))}
-          </select>
+          </SelectControl>
         </div>
         {!form.customer_id && (
           <div className="w-grid three">
@@ -223,7 +224,7 @@ export function NewOrder() {
         <h2>Устройство</h2>
         {devices.length > 0 && (
           <Field label="Устройство из истории">
-            <select
+            <SelectControl
               value={form.device_id}
               onChange={(e) => update("device_id", e.target.value)}
             >
@@ -233,7 +234,7 @@ export function NewOrder() {
                   {d.model} · {d.serial}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </Field>
         )}
         <div className="w-grid">

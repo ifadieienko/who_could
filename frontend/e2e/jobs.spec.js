@@ -1,3 +1,4 @@
+import { awaitSelect } from "./select.js";
 import { test, expect } from "@playwright/test";
 
 test("asset job creation, site pagination, editing and stale-version protection", async ({
@@ -67,36 +68,48 @@ test("asset job creation, site pagination, editing and stale-version protection"
   for (let i = 1; i <= 31; i++)
     site = await post("sites", { customer_id: customer.id, name: `Site ${i}` });
   await page.getByRole("button", { name: "New job for an asset" }).click();
-  await page
-    .getByLabel("Customer", { exact: true })
-    .selectOption(String(customer.id));
-  await page
-    .getByLabel("Asset", { exact: true })
-    .selectOption(String(asset.id));
+  await awaitSelect(
+    page.getByLabel("Customer", { exact: true }),
+    String(customer.id),
+  );
+  await awaitSelect(
+    page.getByLabel("Asset", { exact: true }),
+    String(asset.id),
+  );
   await page.getByRole("button", { name: "More sites" }).click();
-  await page.getByLabel("Customer site").selectOption(String(site.id));
-  await page
-    .getByLabel("Customer", { exact: true })
-    .selectOption(String(other.id));
-  await expect(page.getByLabel("Asset", { exact: true })).toHaveValue("");
-  await expect(page.getByLabel("Customer site")).toHaveValue("");
+  await awaitSelect(page.getByLabel("Customer site"), String(site.id));
+  await awaitSelect(
+    page.getByLabel("Customer", { exact: true }),
+    String(other.id),
+  );
+  await expect(page.getByLabel("Asset", { exact: true })).toHaveAttribute(
+    "data-value",
+    "",
+  );
+  await expect(page.getByLabel("Customer site")).toHaveAttribute(
+    "data-value",
+    "",
+  );
   await expect(
     page.getByRole("button", { name: "Create job draft" }),
   ).toBeDisabled();
-  await page
-    .getByLabel("Customer", { exact: true })
-    .selectOption(String(customer.id));
-  await page
-    .getByLabel("Asset", { exact: true })
-    .selectOption(String(asset.id));
+  await awaitSelect(
+    page.getByLabel("Customer", { exact: true }),
+    String(customer.id),
+  );
+  await awaitSelect(
+    page.getByLabel("Asset", { exact: true }),
+    String(asset.id),
+  );
   await page.getByRole("button", { name: "More sites" }).click();
-  await page.getByLabel("Customer site").selectOption(String(site.id));
-  await page
-    .getByLabel("Workflow", { exact: true })
-    .selectOption(String(workflow.id));
-  await page.getByLabel("Stage form · history").selectOption(String(sheet.id));
-  await page.getByLabel("Job type").selectOption("inspection");
-  await page.getByLabel("Priority", { exact: true }).selectOption("high");
+  await awaitSelect(page.getByLabel("Customer site"), String(site.id));
+  await awaitSelect(
+    page.getByLabel("Workflow", { exact: true }),
+    String(workflow.id),
+  );
+  await awaitSelect(page.getByLabel("Stage form · history"), String(sheet.id));
+  await awaitSelect(page.getByLabel("Job type"), "inspection");
+  await awaitSelect(page.getByLabel("Priority", { exact: true }), "high");
   await page.getByLabel("Work description").fill("Inspect the gauge");
   await page.getByRole("button", { name: "Create job draft" }).click();
   await expect(
@@ -118,18 +131,26 @@ test("asset job creation, site pagination, editing and stale-version protection"
   const path = new URL(page.url()).pathname;
   const id = path.split("/").pop();
   await expect(page.getByLabel("Job type")).toHaveValue("Inspection");
-  await expect(page.getByLabel("Customer site")).toHaveValue(String(site.id));
-  await page.getByLabel("Priority", { exact: true }).selectOption("urgent");
-  await page.getByLabel("Customer site").selectOption("");
+  await expect(page.getByLabel("Customer site")).toHaveAttribute(
+    "data-value",
+    String(site.id),
+  );
+  await awaitSelect(page.getByLabel("Priority", { exact: true }), "urgent");
+  await awaitSelect(page.getByLabel("Customer site"), "");
   await page.getByRole("button", { name: "Save job settings" }).click();
-  await expect(page.getByLabel("Priority", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("Priority", { exact: true })).toHaveAttribute(
+    "data-value",
     "urgent",
   );
   await page.reload();
-  await expect(page.getByLabel("Priority", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("Priority", { exact: true })).toHaveAttribute(
+    "data-value",
     "urgent",
   );
-  await expect(page.getByLabel("Customer site")).toHaveValue("");
+  await expect(page.getByLabel("Customer site")).toHaveAttribute(
+    "data-value",
+    "",
+  );
   const current = await (
     await page.request.get("/api/v2/jobs/" + id, { headers })
   ).json();
@@ -138,13 +159,16 @@ test("asset job creation, site pagination, editing and stale-version protection"
     data: { version: current.version, priority: "low" },
   });
   expect(changed.ok()).toBeTruthy();
-  await page.getByLabel("Priority", { exact: true }).selectOption("normal");
+  await awaitSelect(page.getByLabel("Priority", { exact: true }), "normal");
   await page.getByRole("button", { name: "Save job settings" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Заказ изменён другим сотрудником",
   );
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
-  await expect(page.getByLabel("Priority", { exact: true })).toHaveValue("low");
+  await expect(page.getByLabel("Priority", { exact: true })).toHaveAttribute(
+    "data-value",
+    "low",
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole("button", { name: "Save job settings" }),

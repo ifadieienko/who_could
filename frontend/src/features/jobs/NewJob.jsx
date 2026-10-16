@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useEffect, useState } from "react";
 import { call } from "../../repair-api.js";
 import { go } from "../../app/navigation.js";
@@ -111,7 +112,7 @@ export function NewJob({ can }) {
           <p className="w-muted">{t("jobExistingHint")}</p>
           <div className="w-grid">
             <Field label={t("jobType")}>
-              <select
+              <SelectControl
                 value={form.job_type}
                 onChange={(e) => update("job_type", e.target.value)}
               >
@@ -120,7 +121,7 @@ export function NewJob({ can }) {
                     {t("jobType_" + type)}
                   </option>
                 ))}
-              </select>
+              </SelectControl>
             </Field>
             <PriorityField
               value={form.priority}
@@ -138,7 +139,7 @@ export function NewJob({ can }) {
           </Field>
           <div className="w-grid">
             <Field label={t("jobIntakeForm")}>
-              <select
+              <SelectControl
                 required
                 value={form.template_id}
                 onChange={(e) => update("template_id", e.target.value)}
@@ -151,10 +152,10 @@ export function NewJob({ can }) {
                       {x.name} · v{x.revision}
                     </option>
                   ))}
-              </select>
+              </SelectControl>
             </Field>
             <Field label={t("jobWorkflow")}>
-              <select
+              <SelectControl
                 required
                 value={form.workflow_id}
                 onChange={(e) => update("workflow_id", e.target.value)}
@@ -165,7 +166,7 @@ export function NewJob({ can }) {
                     {x.name} · v{x.revision}
                   </option>
                 ))}
-              </select>
+              </SelectControl>
             </Field>
           </div>
           {[
@@ -177,7 +178,7 @@ export function NewJob({ can }) {
               key={phase}
               label={`${t("jobStageForm")} · ${["diagnosis", "repair", "quality"].includes(phase) ? t("jobPhase_" + phase) : phase}`}
             >
-              <select
+              <SelectControl
                 required
                 value={form.stage_forms[phase] || ""}
                 onChange={(e) =>
@@ -195,7 +196,7 @@ export function NewJob({ can }) {
                       {x.name} · v{x.revision}
                     </option>
                   ))}
-              </select>
+              </SelectControl>
             </Field>
           ))}
           <Button

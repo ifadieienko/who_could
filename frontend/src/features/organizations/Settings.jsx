@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useState } from "react";
 import { call } from "../../repair-api.js";
 import {
@@ -49,11 +50,11 @@ export function OrganizationSettings({ shop, onSave }) {
         <input required maxLength={160} {...field("name")} />
       </Field>
       <Field label={tr("defaultLocale")}>
-        <select {...field("locale")}>
+        <SelectControl {...field("locale")}>
           <option value="en">English</option>
           <option value="pl">Polski</option>
           <option value="ru">Русский</option>
-        </select>
+        </SelectControl>
       </Field>
       <Field label={tr("timezone")}>
         <input required list="timezones" {...field("timezone")} />
@@ -71,11 +72,11 @@ export function OrganizationSettings({ shop, onSave }) {
         </datalist>
       </Field>
       <Field label={tr("currency")}>
-        <select {...field("currency")}>
+        <SelectControl {...field("currency")}>
           {["PLN", "EUR", "GBP", "CZK"].map((v) => (
             <option key={v}>{v}</option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
       <Field label={tr("country")}>
         <input

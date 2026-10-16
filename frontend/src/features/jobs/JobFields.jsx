@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useEffect, useState } from "react";
 import { call } from "../../repair-api.js";
 import { Field, Button, ErrorBox } from "../../components/workshop/ui.jsx";
@@ -6,7 +7,7 @@ import { t } from "../../app/i18n.js";
 export function PriorityField({ value, onChange, disabled }) {
   return (
     <Field label={t("jobPriority")}>
-      <select
+      <SelectControl
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
@@ -16,7 +17,7 @@ export function PriorityField({ value, onChange, disabled }) {
             {t("priority_" + key)}
           </option>
         ))}
-      </select>
+      </SelectControl>
     </Field>
   );
 }
@@ -82,7 +83,7 @@ export function RelatedPicker({ kind, customerId, value, onChange, disabled }) {
         </Field>
       )}
       <Field label={t(kind === "assets" ? "jobAsset" : "jobSite")}>
-        <select
+        <SelectControl
           required={kind === "assets"}
           value={value || ""}
           disabled={disabled || busy || !customerId}
@@ -100,7 +101,7 @@ export function RelatedPicker({ kind, customerId, value, onChange, disabled }) {
               {row.serial ? ` · ${row.serial}` : ""}
             </option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
       {next && (
         <Button

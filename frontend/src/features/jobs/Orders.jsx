@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { Search, Inbox, Plus, ArrowUpRight } from "lucide-react";
 import { t } from "../../app/i18n.js";
 import { Button, ErrorBox, useAction } from "../../components/workshop/ui.jsx";
@@ -66,7 +67,7 @@ export function Orders({ can }) {
             }}
           />
         </div>
-        <select
+        <SelectControl
           aria-label="Статус"
           value={status}
           onChange={(e) => {
@@ -82,7 +83,7 @@ export function Orders({ can }) {
               </option>
             ),
           )}
-        </select>
+        </SelectControl>
         <label className="w-check">
           <input
             type="checkbox"

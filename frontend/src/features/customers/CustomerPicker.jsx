@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useEffect, useState } from "react";
 import { call } from "../../repair-api.js";
 import { Field, ErrorBox } from "../../components/workshop/ui.jsx";
@@ -43,7 +44,7 @@ export function CustomerPicker({ value, onChange, disabled }) {
         />
       </Field>
       <Field label={t("customer")}>
-        <select
+        <SelectControl
           required
           disabled={disabled}
           value={value || ""}
@@ -56,7 +57,7 @@ export function CustomerPicker({ value, onChange, disabled }) {
               {c.company_name ? " · " + c.company_name : ""}
             </option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
     </>
   );

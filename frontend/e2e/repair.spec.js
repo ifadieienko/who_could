@@ -1,3 +1,4 @@
+import { awaitSelect } from "./select.js";
 import { test, expect } from "@playwright/test";
 test("приём → фото → согласование → ремонт → проверка → оплата → выдача; мобильная QR-карточка", async ({
   page,
@@ -47,9 +48,12 @@ test("приём → фото → согласование → ремонт → 
     page.getByRole("button", { name: "Подтвердить приём", exact: true }),
   ).toHaveCount(0);
   async function transition(value) {
-    await page.getByLabel("Перевести на этап").selectOption(value);
+    await awaitSelect(page.getByLabel("Перевести на этап"), value);
     await page.getByRole("button", { name: "Перевести", exact: true }).click();
-    await expect(page.getByLabel("Перевести на этап")).toHaveValue("");
+    await expect(page.getByLabel("Перевести на этап")).toHaveAttribute(
+      "data-value",
+      "",
+    );
   }
   await transition("diagnosis");
   await page
@@ -73,7 +77,7 @@ test("приём → фото → согласование → ремонт → 
   await page.getByRole("button", { name: "Карточка", exact: true }).click();
   await transition("repair");
   await transition("quality");
-  await page.getByLabel("Перевести на этап").selectOption("ready");
+  await awaitSelect(page.getByLabel("Перевести на этап"), "ready");
   for (const label of [
     "Комплектность проверена",
     "Неисправность устранена",
@@ -125,9 +129,9 @@ test("версии формы, сетка и многострочные пров
   await page.getByRole("button", { name: "Начать работу" }).click();
   await page.getByRole("button", { name: "Forms", exact: true }).click();
   await page.getByLabel("Название формы").fill("Ноутбуки");
-  await page.getByLabel("Количество колонок").selectOption("3");
+  await awaitSelect(page.getByLabel("Количество колонок"), "3");
   await page.getByLabel("Название", { exact: true }).fill("Проверка питания");
-  await page.getByLabel("Ширина в колонках").selectOption("2");
+  await awaitSelect(page.getByLabel("Ширина в колонках"), "2");
   await page.getByLabel("Строка (пусто — автоматически)").fill("2");
   await page.getByRole("button", { name: "Сохранить черновик" }).click();
   await page
@@ -136,7 +140,10 @@ test("версии формы, сетка и многострочные пров
   await expect(page.getByLabel("Название формы")).toBeDisabled();
   await page.getByRole("button", { name: "Создать следующую версию" }).click();
   await expect(page.getByLabel("Название формы")).toBeEnabled();
-  await expect(page.getByLabel("Количество колонок")).toHaveValue("3");
+  await expect(page.getByLabel("Количество колонок")).toHaveAttribute(
+    "data-value",
+    "3",
+  );
   await expect(page.getByLabel("Строка (пусто — автоматически)")).toHaveValue(
     "2",
   );
@@ -212,14 +219,14 @@ test("раздельные формы этапов, обязательность
   expect(response.status()).toBe(201);
   const flow = await response.json();
   await page.getByRole("button", { name: "Принять устройство" }).click();
-  await page.getByLabel("Процесс ремонта").selectOption(String(flow.id));
-  await page
-    .getByLabel("Форма диагностики")
-    .selectOption({ label: "Диагностика · v1" });
-  await page.getByLabel("Форма ремонта").selectOption({ label: "Ремонт · v1" });
-  await page
-    .getByLabel("Форма проверки")
-    .selectOption({ label: "Проверка качества · v1" });
+  await awaitSelect(page.getByLabel("Процесс ремонта"), String(flow.id));
+  await awaitSelect(page.getByLabel("Форма диагностики"), {
+    label: "Диагностика · v1",
+  });
+  await awaitSelect(page.getByLabel("Форма ремонта"), { label: "Ремонт · v1" });
+  await awaitSelect(page.getByLabel("Форма проверки"), {
+    label: "Проверка качества · v1",
+  });
   await page.getByLabel("Имя", { exact: true }).fill("Клиент");
   await page.getByLabel("Модель", { exact: true }).fill("Телефон с формами");
   await page.getByLabel("Заявленная неисправность").fill("Не заряжается");
@@ -235,7 +242,7 @@ test("раздельные формы этапов, обязательность
     ["Ремонт", "quality"],
     ["Проверка качества", "ready"],
   ]) {
-    await page.getByLabel("Перевести на этап").selectOption(target);
+    await awaitSelect(page.getByLabel("Перевести на этап"), target);
     await page.getByRole("button", { name: "Перевести", exact: true }).click();
     await expect(
       page.getByText("Заполните: " + tab, { exact: true }),
@@ -249,7 +256,10 @@ test("раздельные формы этапов, обязательность
     expect((await saved).status()).toBe(200);
     await page.getByRole("button", { name: "Карточка", exact: true }).click();
     await page.getByRole("button", { name: "Перевести", exact: true }).click();
-    await expect(page.getByLabel("Перевести на этап")).toHaveValue("");
+    await expect(page.getByLabel("Перевести на этап")).toHaveAttribute(
+      "data-value",
+      "",
+    );
   }
   await expect(
     page.getByRole("heading", { name: "Выдать устройство" }),
@@ -279,16 +289,22 @@ test("organization currency, timezone and settings language persist", async ({
   await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
   await page.getByRole("button", { name: "Начать работу" }).click();
   await page.getByRole("button", { name: "Organization", exact: true }).click();
-  await page.getByLabel("Default currency").selectOption("EUR");
+  await awaitSelect(page.getByLabel("Default currency"), "EUR");
   await page.getByLabel("Time zone").fill("Europe/London");
   await page.getByRole("button", { name: "Save settings" }).click();
   await page.reload();
-  await expect(page.getByLabel("Default currency")).toHaveValue("EUR");
+  await expect(page.getByLabel("Default currency")).toHaveAttribute(
+    "data-value",
+    "EUR",
+  );
   await expect(page.getByLabel("Time zone")).toHaveValue("Europe/London");
-  await page.getByLabel("Default organization language").selectOption("pl");
+  await awaitSelect(page.getByLabel("Default organization language"), "pl");
   await page.getByRole("button", { name: "Save settings" }).click();
   await page.reload();
-  await expect(page.getByLabel("Waluta domyślna")).toHaveValue("EUR");
+  await expect(page.getByLabel("Waluta domyślna")).toHaveAttribute(
+    "data-value",
+    "EUR",
+  );
 });
 
 test("company, site and generic asset with a mobile QR card", async ({
@@ -305,7 +321,7 @@ test("company, site and generic asset with a mobile QR card", async ({
   await page.getByRole("button", { name: "Начать работу" }).click();
   await page.getByRole("button", { name: "Customers", exact: true }).click();
   await page.getByRole("button", { name: "New customer", exact: true }).click();
-  await page.getByLabel("Customer type").selectOption("company");
+  await awaitSelect(page.getByLabel("Customer type"), "company");
   await page.getByLabel("Name", { exact: true }).fill("Precision Lab");
   await page
     .getByLabel("Company name", { exact: true })
@@ -321,21 +337,21 @@ test("company, site and generic asset with a mobile QR card", async ({
   await expect(page.getByText("Laboratory A", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Assets", exact: true }).click();
   await page.getByRole("button", { name: "New asset", exact: true }).click();
-  await expect(
-    page.getByLabel("Customer", { exact: true }).locator("option"),
-  ).toHaveCount(2);
-  await page
-    .getByLabel("Customer", { exact: true })
-    .selectOption({ label: "Precision Lab · Precision Lab Ltd" });
-  await expect(
-    page.getByLabel("Site (optional)").locator("option"),
-  ).toHaveCount(2);
-  await page
-    .getByLabel("Site (optional)")
-    .selectOption({ label: "Laboratory A" });
+  await page.getByLabel("Customer", { exact: true }).click();
+  await expect(page.getByRole("option")).toHaveCount(2);
+  await page.keyboard.press("Escape");
+  await awaitSelect(page.getByLabel("Customer", { exact: true }), {
+    label: "Precision Lab · Precision Lab Ltd",
+  });
+  await page.getByLabel("Site (optional)").click();
+  await expect(page.getByRole("option")).toHaveCount(2);
+  await page.keyboard.press("Escape");
+  await awaitSelect(page.getByLabel("Site (optional)"), {
+    label: "Laboratory A",
+  });
   await page.getByLabel("Name", { exact: true }).fill("Gauge A");
   await page.getByLabel("Serial number").fill("G-001");
-  await page.getByLabel("Asset type").selectOption("instrument");
+  await awaitSelect(page.getByLabel("Asset type"), "instrument");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Gauge A", exact: true }),

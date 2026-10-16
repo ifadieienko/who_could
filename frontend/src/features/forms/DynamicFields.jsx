@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { Field } from "../../components/workshop/ui.jsx";
 import { label } from "./editor-options.js";
 
@@ -41,7 +42,7 @@ export function DynamicFields({
                     onChange={(e) => set(e.target.checked)}
                   />
                 ) : f.type === "select" ? (
-                  <select
+                  <SelectControl
                     disabled={disabled}
                     value={value}
                     onChange={(e) => set(e.target.value)}
@@ -50,12 +51,12 @@ export function DynamicFields({
                     {f.options.map((x) => (
                       <option key={x}>{x}</option>
                     ))}
-                  </select>
+                  </SelectControl>
                 ) : f.type === "image" ? (
                   typeof value === "string" && value.startsWith("data:") ? (
                     <img className="w-legacy-photo" src={value} alt={f.label} />
                   ) : (
-                    <select
+                    <SelectControl
                       disabled={disabled}
                       value={value}
                       onChange={(e) =>
@@ -73,7 +74,7 @@ export function DynamicFields({
                           {x.filename} · #{x.id}
                         </option>
                       ))}
-                    </select>
+                    </SelectControl>
                   )
                 ) : f.type === "text" ? (
                   <textarea

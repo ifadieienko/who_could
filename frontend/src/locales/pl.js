@@ -1,4 +1,16 @@
 export default {
+appearance: "Wygląd",
+theme: "Motyw",
+theme_light: "Jasny",
+theme_dark: "Ciemny",
+theme_system: "Systemowy",
+accent: "Kolor akcentu",
+accent_green: "Zielony",
+accent_red: "Czerwony",
+accent_violet: "Fioletowy",
+accent_blue: "Niebieski",
+accent_amber: "Bursztynowy",
+
   navJobs: "Zlecenia",
   navForms: "Formularze",
   navWorkflows: "Procesy",

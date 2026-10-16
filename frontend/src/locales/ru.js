@@ -1,4 +1,16 @@
 export default {
+appearance: "Оформление",
+theme: "Тема",
+theme_light: "Светлая",
+theme_dark: "Тёмная",
+theme_system: "Системная",
+accent: "Акцентный цвет",
+accent_green: "Зелёный",
+accent_red: "Красный",
+accent_violet: "Фиолетовый",
+accent_blue: "Синий",
+accent_amber: "Янтарный",
+
   navJobs: "Заказы",
   navForms: "Формы",
   navWorkflows: "Процессы",

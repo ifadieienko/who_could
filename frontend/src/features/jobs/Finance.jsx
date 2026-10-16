@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -174,7 +175,7 @@ export function Finance({ order: o, can, onUpdate }) {
               />
             </Field>
             <Field label="Способ">
-              <select
+              <SelectControl
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
               >
@@ -182,7 +183,7 @@ export function Finance({ order: o, can, onUpdate }) {
                 <option value="card">Карта</option>
                 <option value="transfer">Перевод</option>
                 <option value="other">Другой</option>
-              </select>
+              </SelectControl>
             </Field>
             <Button disabled={a.busy}>Записать полученную оплату</Button>
           </form>

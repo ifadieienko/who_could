@@ -664,3 +664,47 @@ hr {
     margin: 20px auto;
   }
 }
+
+/* A real layout row keeps the persistent language control clear of page actions. */
+.w-global-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 60px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 24px;
+  background: #f3f6f4;
+  border-bottom: 1px solid #d8e3de;
+}
+.w-language {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.w-language select {
+  width: auto;
+  min-width: 124px;
+}
+.w-app {
+  min-height: calc(100vh - 60px);
+}
+.w-sidebar {
+  top: 60px;
+  height: calc(100vh - 60px);
+}
+@media (max-width: 800px) {
+  .w-global-bar {
+    padding: 8px 16px;
+  }
+  .w-sidebar {
+    height: auto;
+  }
+}
+@media print {
+  .w-global-bar {
+    display: none;
+  }
+}

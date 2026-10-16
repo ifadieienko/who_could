@@ -31,6 +31,31 @@ test("asset job creation, site pagination, editing and stale-version protection"
     expect(result.ok(), await result.text()).toBeTruthy();
     return result.json();
   }
+  const sheet = await post("templates", {
+    name: "Measurement sheet",
+    purpose: "history",
+    fields: [
+      {
+        key: "reading",
+        label: "Instrument reading",
+        type: "number",
+        required: true,
+      },
+    ],
+  });
+  await post(`templates/${sheet.id}/publish`);
+  const workflow = await post("workflows", {
+    name: "Instrument inspection",
+    stages: [
+      {
+        key: "inspect",
+        name: "Inspect",
+        form_phase: "history",
+        next: ["ready"],
+      },
+      { key: "ready", name: "Ready", category: "ready" },
+    ],
+  });
   const customer = await post("customer-records", { name: "Job customer" });
   const other = await post("customer-records", { name: "Other customer" });
   const asset = await post("assets", {
@@ -66,6 +91,10 @@ test("asset job creation, site pagination, editing and stale-version protection"
     .selectOption(String(asset.id));
   await page.getByRole("button", { name: "More sites" }).click();
   await page.getByLabel("Customer site").selectOption(String(site.id));
+  await page
+    .getByLabel("Workflow", { exact: true })
+    .selectOption(String(workflow.id));
+  await page.getByLabel("Stage form: history").selectOption(String(sheet.id));
   await page.getByLabel("Job type").selectOption("inspection");
   await page.getByLabel("Priority", { exact: true }).selectOption("high");
   await page.getByLabel("Work description").fill("Inspect the gauge");
@@ -73,6 +102,19 @@ test("asset job creation, site pagination, editing and stale-version protection"
   await expect(
     page.getByRole("heading", { name: /Gauge without model/ }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Measurement sheet", exact: true })
+    .click();
+  await page.getByLabel("Instrument reading").fill("12.5");
+  await page
+    .getByRole("button", { name: "Сохранить форму", exact: true })
+    .click();
+  await page.getByRole("button", { name: "История", exact: true }).click();
+  await expect(page.getByLabel("Instrument reading")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Measurement sheet", exact: true })
+    .click();
+  await expect(page.getByLabel("Instrument reading")).toHaveValue("12.5");
   const path = new URL(page.url()).pathname;
   const id = path.split("/").pop();
   await expect(page.getByLabel("Job type")).toHaveValue("Inspection");

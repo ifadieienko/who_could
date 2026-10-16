@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 from pydantic import Field, model_validator
-from app.repair_schemas import Strict, OrderEdit, FormPhase
+from app.repair_schemas import Strict, OrderEdit, FormSlot
 
 Priority = Literal["low", "normal", "high", "urgent"]
 
@@ -18,7 +18,7 @@ class JobInput(Strict):
     condition: str = Field(default="", max_length=10000)
     accessories: str = Field(default="", max_length=5000)
     location: str = Field(default="", max_length=160)
-    stage_forms: dict[FormPhase, int] = Field(default_factory=dict)
+    stage_forms: dict[FormSlot, int] = Field(default_factory=dict)
     values: dict = Field(default_factory=dict)
     due_at: datetime | None = None
     draft: bool = True

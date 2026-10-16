@@ -175,7 +175,7 @@ export function NewJob({ can }) {
           ].map((phase) => (
             <Field
               key={phase}
-              label={`${t("jobStageForm")} · ${t("jobPhase_" + phase)}`}
+              label={`${t("jobStageForm")} · ${["diagnosis", "repair", "quality"].includes(phase) ? t("jobPhase_" + phase) : phase}`}
             >
               <select
                 required

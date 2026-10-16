@@ -12,7 +12,8 @@ export function WorkflowEditor() {
   const [list, setList] = useState([]),
     [active, setActive] = useState(null),
     [name, setName] = useState(""),
-    [stages, setStages] = useState([]);
+    [stages, setStages] = useState([]),
+    [purposes, setPurposes] = useState([]);
   const a = useAction();
   const choose = (w) => {
     setActive(w);
@@ -31,6 +32,14 @@ export function WorkflowEditor() {
     a.run(async () => {
       const all = await call("/v2/workflows");
       setList(all);
+      const templates = await call("/v2/templates");
+      setPurposes([
+        ...new Set(
+          templates
+            .filter((t) => t.published && t.purpose !== "intake")
+            .map((t) => t.purpose),
+        ),
+      ]);
       if (all[0]) choose(all[0]);
     });
   }, []);
@@ -104,6 +113,14 @@ export function WorkflowEditor() {
             );
             const all = await call("/v2/workflows");
             setList(all);
+            const templates = await call("/v2/templates");
+            setPurposes([
+              ...new Set(
+                templates
+                  .filter((t) => t.published && t.purpose !== "intake")
+                  .map((t) => t.purpose),
+              ),
+            ]);
             choose(all.find((w) => w.id === r.id));
           });
         }}
@@ -202,9 +219,25 @@ export function WorkflowEditor() {
                   }
                 >
                   <option value="">Без отдельной формы</option>
-                  <option value="diagnosis">Диагностика</option>
-                  <option value="repair">Ремонт</option>
-                  <option value="quality">Проверка качества</option>
+                  {[
+                    ...new Set(
+                      [
+                        "diagnosis",
+                        "repair",
+                        "quality",
+                        ...purposes,
+                        s.form_phase,
+                      ].filter(Boolean),
+                    ),
+                  ].map((p) => (
+                    <option key={p} value={p}>
+                      {{
+                        diagnosis: "Диагностика",
+                        repair: "Ремонт",
+                        quality: "Проверка качества",
+                      }[p] || p}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Обязательные ключи полей — через запятую">

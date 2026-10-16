@@ -6,6 +6,7 @@ import {
 } from "../../components/workshop/ui.jsx";
 import { call } from "../../repair-api.js";
 import { label } from "../forms/editor-options.js";
+import { t } from "../../app/i18n.js";
 import { useState } from "react";
 
 export function Auth({ onLogin }) {
@@ -32,28 +33,22 @@ export function Auth({ onLogin }) {
     <div className="w-auth">
       <div className="w-auth-intro">
         <p className="w-eyebrow">WHO COULD / WORKSHOP</p>
-        <h1>
-          Каждый ремонт.
-          <br />
-          От приёма до выдачи.
-        </h1>
-        <p>
-          Заказы, фотографии, сметы и проверки — в одной истории устройства.
-        </p>
+        <h1>{t("authHeadline")}</h1>
+        <p>{t("authDescription")}</p>
       </div>
       <form className="w-panel" onSubmit={submit}>
-        <h2>{register ? "Создать мастерскую" : "Войти в мастерскую"}</h2>
+        <h2>{register ? t("authRegister") : t("authLoginTitle")}</h2>
         <ErrorBox error={a.error} />
         {register && (
           <>
-            <Field label="Ваше имя">
+            <Field label={t("authName")}>
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </Field>
-            <Field label="Название мастерской">
+            <Field label={t("authOrganization")}>
               <input
                 required
                 value={form.workshop}
@@ -71,7 +66,7 @@ export function Auth({ onLogin }) {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
         </Field>
-        <Field label="Пароль">
+        <Field label={t("authPassword")}>
           <input
             type="password"
             required
@@ -82,10 +77,10 @@ export function Auth({ onLogin }) {
           />
         </Field>
         <Button disabled={a.busy}>
-          {register ? "Начать работу" : "Войти"}
+          {register ? t("authStart") : t("authLogin")}
         </Button>
         <Button secondary type="button" onClick={() => setRegister(!register)}>
-          {register ? "Уже есть аккаунт" : "Новая мастерская"}
+          {register ? t("authExisting") : t("authNew")}
         </Button>
         {!register && (
           <Button
@@ -101,7 +96,7 @@ export function Auth({ onLogin }) {
               })
             }
           >
-            Восстановить пароль
+            {t("authRecover")}
           </Button>
         )}
         {notice && <p>{notice}</p>}
@@ -129,21 +124,21 @@ export function ResetPassword({ token }) {
           });
         }}
       >
-        <h1>Новый пароль</h1>
+        <h1>{t("authNewPassword")}</h1>
         <ErrorBox error={a.error} />
         {done ? (
-          <a href="/">Войти с новым паролем</a>
+          <a href="/">{t("authLoginNewPassword")}</a>
         ) : (
           <>
             <input
-              aria-label="Новый пароль"
+              aria-label={t("authNewPassword")}
               type="password"
               minLength="12"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button disabled={a.busy}>Сохранить</Button>
+            <Button disabled={a.busy}>{t("save")}</Button>
           </>
         )}
       </form>

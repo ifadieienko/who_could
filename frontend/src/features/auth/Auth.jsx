@@ -32,6 +32,13 @@ export function Auth({ onLogin }) {
   return (
     <div className="w-auth">
       <div className="w-auth-intro">
+        <div className="w-auth-art" aria-hidden="true">
+          <div className="w-orbit w-orbit-one" />
+          <div className="w-orbit w-orbit-two" />
+          <span className="w-art-core">w.</span>
+          <span className="w-art-satellite w-art-satellite-one" />
+          <span className="w-art-satellite w-art-satellite-two" />
+        </div>
         <p className="w-eyebrow">WHO COULD / WORKSHOP</p>
         <h1>{t("authHeadline")}</h1>
         <p>{t("authDescription")}</p>

@@ -551,7 +551,7 @@ hr,
 .w-dynamic > div { min-width: 0; }
 .w-form-table { min-width: 0; border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--surface); }
 .w-form-table legend { padding: 0 8px; font-weight: 650; color: var(--ink); }
-.w-form-table-scroll { max-width: 100%; overflow-x: auto; border-radius: 10px; }
+.w-form-table-scroll { position: relative; max-width: 100%; overflow-x: auto; border-radius: 10px; }
 .w-form-table-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .w-form-table table { width: 100%; border-collapse: collapse; }
 .w-form-table th, .w-form-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }

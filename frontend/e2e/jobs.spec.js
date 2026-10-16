@@ -94,7 +94,7 @@ test("asset job creation, site pagination, editing and stale-version protection"
   await page
     .getByLabel("Workflow", { exact: true })
     .selectOption(String(workflow.id));
-  await page.getByLabel("Stage form: history").selectOption(String(sheet.id));
+  await page.getByLabel("Stage form · history").selectOption(String(sheet.id));
   await page.getByLabel("Job type").selectOption("inspection");
   await page.getByLabel("Priority", { exact: true }).selectOption("high");
   await page.getByLabel("Work description").fill("Inspect the gauge");

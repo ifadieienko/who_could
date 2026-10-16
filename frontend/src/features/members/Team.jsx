@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -59,7 +60,7 @@ export function Team({ user }) {
                   <small>{m.email}</small>
                 </td>
                 <td>
-                  <select
+                  <SelectControl
                     disabled={m.owner || a.busy}
                     value={m.role_id}
                     onChange={(e) =>
@@ -75,7 +76,7 @@ export function Team({ user }) {
                           {r.name}
                         </option>
                       ))}
-                  </select>
+                  </SelectControl>
                 </td>
                 <td>
                   <Button
@@ -128,7 +129,7 @@ export function Team({ user }) {
             </Field>
           ))}
           <Field label="Роль">
-            <select
+            <SelectControl
               required
               value={form.role_id}
               onChange={(e) => setForm({ ...form, role_id: e.target.value })}
@@ -141,7 +142,7 @@ export function Team({ user }) {
                     {r.name}
                   </option>
                 ))}
-            </select>
+            </SelectControl>
           </Field>
           <Button disabled={a.busy}>Создать аккаунт</Button>
         </form>
@@ -161,7 +162,7 @@ export function Team({ user }) {
           }}
         >
           <h2>Права роли</h2>
-          <select
+          <SelectControl
             aria-label="Редактировать роль"
             value={role.id || ""}
             onChange={(e) => {
@@ -186,7 +187,7 @@ export function Team({ user }) {
                   {r.name}
                 </option>
               ))}
-          </select>
+          </SelectControl>
           <Field label="Название">
             <input
               required
@@ -195,13 +196,13 @@ export function Team({ user }) {
             />
           </Field>
           <Field label="Область заказов">
-            <select
+            <SelectControl
               value={role.scope}
               onChange={(e) => setRole({ ...role, scope: e.target.value })}
             >
               <option value="all">Вся мастерская</option>
               <option value="own">Свои и свободные</option>
-            </select>
+            </SelectControl>
           </Field>
           <div className="w-check-grid">
             {perms.map((p) => (

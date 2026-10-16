@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -168,14 +169,14 @@ export function WorkflowEditor() {
                 />
               </Field>
               <Field label="Состояние">
-                <select
+                <SelectControl
                   value={s.category}
                   onChange={(e) => change(i, { category: e.target.value })}
                 >
                   <option value="active">Работа</option>
                   <option value="waiting">Ожидание</option>
                   <option value="ready">Готово к выдаче</option>
-                </select>
+                </SelectControl>
               </Field>
               <Field label="Задержка, часов">
                 <input
@@ -212,7 +213,7 @@ export function WorkflowEditor() {
             </div>
             <div className="w-grid">
               <Field label="Форма для завершения этапа">
-                <select
+                <SelectControl
                   value={s.form_phase || ""}
                   onChange={(e) =>
                     change(i, { form_phase: e.target.value || null })
@@ -238,7 +239,7 @@ export function WorkflowEditor() {
                       }[p] || p}
                     </option>
                   ))}
-                </select>
+                </SelectControl>
               </Field>
               <Field label="Обязательные ключи полей — через запятую">
                 <input
@@ -249,7 +250,7 @@ export function WorkflowEditor() {
                 />
               </Field>
               <Field label="Право для перехода">
-                <select
+                <SelectControl
                   value={s.permission || "orders.transition"}
                   onChange={(e) => change(i, { permission: e.target.value })}
                 >
@@ -258,7 +259,7 @@ export function WorkflowEditor() {
                       {label(p)}
                     </option>
                   ))}
-                </select>
+                </SelectControl>
               </Field>
             </div>
             <Field label="Обязательные проверки — каждая с новой строки">

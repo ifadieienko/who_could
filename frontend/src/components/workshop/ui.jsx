@@ -1,3 +1,4 @@
+import { SelectControl } from "./SelectControl.jsx";
 import { Children, cloneElement, isValidElement, useState } from "react";
 
 export function Field({ label, children }) {
@@ -6,7 +7,7 @@ export function Field({ label, children }) {
       <span>{label}</span>
       {Children.map(children, (child) =>
         isValidElement(child) &&
-        ["input", "select", "textarea"].includes(child.type)
+        ["input", "select", "textarea", SelectControl].includes(child.type)
           ? cloneElement(child, {
               "aria-label":
                 child.props["aria-label"] ??

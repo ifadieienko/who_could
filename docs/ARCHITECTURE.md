@@ -120,4 +120,11 @@ A persistent top-right language selector is available on every application route
 
 ### Workspace visual design
 
-`frontend/src/design.css` supplies shared color, type, control, table and navigation treatments over the existing layout stylesheet. Geist is bundled locally and icons use the existing Lucide dependency. Route entrances and hover/press feedback use CSS transforms and opacity; `prefers-reduced-motion` disables animation and transitions. Native inputs and selects retain keyboard and screen-reader semantics, and the language bar stays accessible on mobile.
+`frontend/src/design.css` supplies shared color, type, control, table and navigation treatments over the existing layout stylesheet. Geist is bundled locally and icons use the existing Lucide dependency. Route entrances and hover/press feedback use CSS transforms and opacity; `prefers-reduced-motion` disables animation and transitions. Inputs and shared Base UI select controls retain keyboard and screen-reader semantics, and the language bar stays accessible on mobile.
+
+
+### Appearance and select controls
+
+`themes.css` defines shared surface, foreground, focus and accent tokens for light and dark modes. The header appearance popover stores personal preferences in browser local storage; system mode follows OS color-scheme changes. Green, red, violet, blue and amber accents affect navigation and controls, while status badges retain semantic colors.
+
+`SelectControl` adapts existing option children and value/onChange handlers to Base UI Select, with portalled, rounded menus, keyboard navigation, required fields and disabled states. Sidebar open/focus states explicitly set both foreground and background to avoid unreadable text. Playwright covers preference persistence, keyboard selection, mobile overflow and contrast in both themes.

@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useEffect, useState } from "react";
 import { call } from "../../repair-api.js";
 import {
@@ -67,7 +68,7 @@ export function Customers({ can }) {
         <form className="w-panel" onSubmit={save}>
           <h2>{form.id ? t("edit") : t("newCustomer")}</h2>
           <Field label={t("kind")}>
-            <select
+            <SelectControl
               value={form.kind}
               onChange={(e) => setForm({ ...form, kind: e.target.value })}
             >
@@ -76,7 +77,7 @@ export function Customers({ can }) {
                   {t(k)}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </Field>
           {Object.keys(empty)
             .filter((k) => k !== "kind")

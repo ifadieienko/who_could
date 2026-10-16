@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import { useEffect, useState } from "react";
 import { call, printDocument } from "../../repair-api.js";
 import {
@@ -253,7 +254,7 @@ function AssetEditor({ initial, onSave, onCancel }) {
         }
       />
       <Field label={t("site")}>
-        <select
+        <SelectControl
           value={form.site_id || ""}
           onChange={(e) =>
             setForm({ ...form, site_id: Number(e.target.value) || null })
@@ -265,7 +266,7 @@ function AssetEditor({ initial, onSave, onCancel }) {
               {site.name}
             </option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
       {next && (
         <Button
@@ -282,7 +283,7 @@ function AssetEditor({ initial, onSave, onCancel }) {
         </Field>
       ))}
       <Field label={t("asset_type")}>
-        <select {...field("asset_type")}>
+        <SelectControl {...field("asset_type")}>
           {[
             "device",
             "ring",
@@ -298,16 +299,16 @@ function AssetEditor({ initial, onSave, onCancel }) {
               {t(k)}
             </option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
       <Field label={t("status")}>
-        <select {...field("status")}>
+        <SelectControl {...field("status")}>
           {["active", "retired", "quarantined"].map((k) => (
             <option key={k} value={k}>
               {t(k)}
             </option>
           ))}
-        </select>
+        </SelectControl>
       </Field>
       <Button disabled={action.busy}>{t("save")}</Button>
       <Button secondary type="button" onClick={onCancel}>

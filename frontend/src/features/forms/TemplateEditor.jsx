@@ -1,3 +1,4 @@
+import { SelectControl } from "../../components/workshop/SelectControl.jsx";
 import {
   Button,
   ErrorBox,
@@ -146,14 +147,14 @@ export function TemplateEditor() {
                   </small>
                 </Field>
                 <Field label="Количество колонок">
-                  <select
+                  <SelectControl
                     value={columns}
                     onChange={(e) => setColumns(Number(e.target.value))}
                   >
                     {[1, 2, 3].map((n) => (
                       <option key={n}>{n}</option>
                     ))}
-                  </select>
+                  </SelectControl>
                 </Field>
               </div>
               {fields.map((f, i) => (
@@ -186,7 +187,7 @@ export function TemplateEditor() {
                       />
                     </Field>
                     <Field label="Тип">
-                      <select
+                      <SelectControl
                         value={f.type}
                         onChange={(e) => change(i, { type: e.target.value })}
                       >
@@ -195,7 +196,7 @@ export function TemplateEditor() {
                             {v}
                           </option>
                         ))}
-                      </select>
+                      </SelectControl>
                     </Field>
                     <Field label="Раздел">
                       <input
@@ -204,7 +205,7 @@ export function TemplateEditor() {
                       />
                     </Field>
                     <Field label="Ширина в колонках">
-                      <select
+                      <SelectControl
                         value={f.width || 1}
                         onChange={(e) =>
                           change(i, { width: Number(e.target.value) })
@@ -213,7 +214,7 @@ export function TemplateEditor() {
                         {[1, 2, 3].map((n) => (
                           <option key={n}>{n}</option>
                         ))}
-                      </select>
+                      </SelectControl>
                     </Field>
                     <Field label="Строка (пусто — автоматически)">
                       <input
@@ -259,7 +260,7 @@ export function TemplateEditor() {
                     </Field>
                     <div className="w-grid">
                       <Field label="Показывать, если поле">
-                        <select
+                        <SelectControl
                           value={f.condition?.field || ""}
                           onChange={(e) =>
                             change(i, {
@@ -285,13 +286,13 @@ export function TemplateEditor() {
                                 {x.label || x.key}
                               </option>
                             ))}
-                        </select>
+                        </SelectControl>
                       </Field>
                       {f.condition && (
                         <Field label="Равно (для флажка: true/false)">
                           {fields.find((x) => x.key === f.condition.field)
                             ?.type === "checkbox" ? (
-                            <select
+                            <SelectControl
                               value={String(f.condition.equals)}
                               onChange={(e) =>
                                 change(i, {
@@ -304,7 +305,7 @@ export function TemplateEditor() {
                             >
                               <option value="true">Отмечено</option>
                               <option value="false">Не отмечено</option>
-                            </select>
+                            </SelectControl>
                           ) : (
                             <input
                               value={String(f.condition.equals)}
@@ -335,7 +336,7 @@ export function TemplateEditor() {
                               : "Право для изменения"
                           }
                         >
-                          <select
+                          <SelectControl
                             value={f[k] || ""}
                             onChange={(e) =>
                               change(i, { [k]: e.target.value || null })
@@ -347,7 +348,7 @@ export function TemplateEditor() {
                                 {label(p)}
                               </option>
                             ))}
-                          </select>
+                          </SelectControl>
                         </Field>
                       ))}
                     </div>

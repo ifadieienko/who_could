@@ -1,4 +1,16 @@
 export default {
+appearance: "Appearance",
+theme: "Theme",
+theme_light: "Light",
+theme_dark: "Dark",
+theme_system: "System",
+accent: "Accent color",
+accent_green: "Green",
+accent_red: "Red",
+accent_violet: "Violet",
+accent_blue: "Blue",
+accent_amber: "Amber",
+
   navJobs: "Jobs",
   navForms: "Forms",
   navWorkflows: "Workflows",

@@ -12,7 +12,7 @@ test("приём → фото → согласование → ремонт → 
   await page.getByLabel("Email", { exact: true }).fill("browser@example.com");
   await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
   await page.getByRole("button", { name: "Начать работу" }).click();
-  await page.getByRole("button", { name: "+ Принять устройство" }).click();
+  await page.getByRole("button", { name: "Принять устройство" }).click();
   await page.getByLabel("Имя", { exact: true }).fill("Тестовый клиент");
   await page.getByLabel("Email", { exact: true }).fill("customer@example.com");
   await page.getByLabel("Модель", { exact: true }).fill("ThinkPad T14");
@@ -178,7 +178,7 @@ test("раздельные формы этапов, обязательность
   await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
   await page.getByRole("button", { name: "Начать работу" }).click();
   await expect(
-    page.getByRole("button", { name: "+ Принять устройство" }),
+    page.getByRole("button", { name: "Принять устройство" }),
   ).toBeVisible();
   const wid = await page.evaluate(() => localStorage.getItem("workshop"));
   const headers = { "X-Workshop-Id": wid, Origin: new URL(page.url()).origin };
@@ -211,7 +211,7 @@ test("раздельные формы этапов, обязательность
   });
   expect(response.status()).toBe(201);
   const flow = await response.json();
-  await page.getByRole("button", { name: "+ Принять устройство" }).click();
+  await page.getByRole("button", { name: "Принять устройство" }).click();
   await page.getByLabel("Процесс ремонта").selectOption(String(flow.id));
   await page
     .getByLabel("Форма диагностики")

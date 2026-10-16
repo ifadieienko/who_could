@@ -116,3 +116,8 @@ Form purposes now accept lowercase semantic keys (1–20 characters, beginning w
 This is the first part of Form Engine 2: storage still uses the existing `stage_forms` JSON. Separate `JobFormInstance` records, table fields, richer validation and calculations remain to be implemented.
 
 A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.
+
+
+### Workspace visual design
+
+`frontend/src/design.css` supplies shared color, type, control, table and navigation treatments over the existing layout stylesheet. Geist is bundled locally and icons use the existing Lucide dependency. Route entrances and hover/press feedback use CSS transforms and opacity; `prefers-reduced-motion` disables animation and transitions. Native inputs and selects retain keyboard and screen-reader semantics, and the language bar stays accessible on mobile.

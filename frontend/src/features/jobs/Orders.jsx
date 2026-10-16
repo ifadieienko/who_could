@@ -1,3 +1,4 @@
+import { Search, Inbox, Plus, ArrowUpRight } from "lucide-react";
 import { t } from "../../app/i18n.js";
 import { Button, ErrorBox, useAction } from "../../components/workshop/ui.jsx";
 import { call } from "../../repair-api.js";
@@ -41,25 +42,30 @@ export function Orders({ can }) {
         </div>
         {can("jobs.create") && can("assets.read") && can("customers.read") && (
           <Button secondary onClick={() => go("/jobs/new")}>
+            <ArrowUpRight size={16} aria-hidden="true" />
             {t("newAssetJob")}
           </Button>
         )}
         {can("orders.create") && (
           <Button onClick={() => go("/orders/new")}>
-            + Принять устройство
+            <Plus size={16} aria-hidden="true" />
+            Принять устройство
           </Button>
         )}
       </header>
-      <div className="w-toolbar">
-        <input
-          aria-label="Поиск заказов"
-          placeholder="Номер, модель, S/N, неисправность, полка…"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(1);
-          }}
-        />
+      <div className="w-toolbar w-queue-toolbar">
+        <div className="w-search-control">
+          <Search size={18} aria-hidden="true" />
+          <input
+            aria-label="Поиск заказов"
+            placeholder="Номер, модель, S/N, неисправность, полка…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
         <select
           aria-label="Статус"
           value={status}
@@ -136,7 +142,12 @@ export function Orders({ can }) {
           </tbody>
         </table>
         {!data.items.length && (
-          <div className="w-empty">Заказов в этой выборке нет.</div>
+          <div className="w-empty">
+            <span className="w-empty-icon">
+              <Inbox size={28} strokeWidth={1.4} aria-hidden="true" />
+            </span>
+            Заказов в этой выборке нет.
+          </div>
         )}
       </div>
       <footer className="w-pagination">

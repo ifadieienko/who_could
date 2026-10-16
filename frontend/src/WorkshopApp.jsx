@@ -15,7 +15,35 @@ import { call, getWorkshop, setWorkshop } from "./repair-api.js";
 import { go } from "./app/navigation.js";
 import { label } from "./features/forms/editor-options.js";
 import { useEffect, useState } from "react";
+import "@fontsource-variable/geist";
 import "./workshop.css";
+import "./design.css";
+import {
+  LayoutDashboard,
+  Files,
+  GitBranch,
+  Package,
+  Users,
+  ArrowLeftRight,
+  CreditCard,
+  Settings2,
+  Boxes,
+  ContactRound,
+  ArrowUpRight,
+} from "lucide-react";
+const navigationIcons = {
+  "/orders": LayoutDashboard,
+  "/templates": Files,
+  "/workflows": GitBranch,
+  "/warehouse": Package,
+  "/team": Users,
+  "/data": ArrowLeftRight,
+  "/billing": CreditCard,
+  "/settings": Settings2,
+  "/assets": Boxes,
+  "/customers": ContactRound,
+};
+
 import { Assets } from "./features/assets/Assets.jsx";
 import { Customers } from "./features/customers/Customers.jsx";
 import { LanguageSwitcher } from "./app/LanguageSwitcher.jsx";
@@ -110,7 +138,9 @@ export default function WorkshopApp() {
     <div className="w-app">
       <aside className="w-sidebar">
         <div className="w-brand">
-          W
+          <span className="w-brand-mark" aria-hidden="true">
+            w.
+          </span>
           <span>
             Who Could<small>{t("workspace")}</small>
           </span>
@@ -131,15 +161,25 @@ export default function WorkshopApp() {
           ))}
         </select>
         <nav>
-          {nav.map(([url, name]) => (
-            <button
-              key={url}
-              className={path.startsWith(url) ? "active" : ""}
-              onClick={() => go(url)}
-            >
-              {name}
-            </button>
-          ))}
+          {nav.map(([url, name]) => {
+            const Icon = navigationIcons[url];
+            return (
+              <button
+                key={url}
+                className={path.startsWith(url) ? "active" : ""}
+                aria-current={path.startsWith(url) ? "page" : undefined}
+                onClick={() => go(url)}
+              >
+                <Icon size={18} strokeWidth={1.7} aria-hidden="true" />
+                <span>{name}</span>
+                <ArrowUpRight
+                  className="w-nav-arrow"
+                  size={14}
+                  aria-hidden="true"
+                />
+              </button>
+            );
+          })}
         </nav>
         <div className="w-account">
           <strong>{user.name}</strong>
@@ -150,36 +190,38 @@ export default function WorkshopApp() {
         </div>
       </aside>
       <main className="w-main" key={selected}>
-        <ErrorBox error={action.error} />
-        {!shop ? (
-          <p>{t("organizationDisabled")}</p>
-        ) : path === "/assets" || /^\/assets\/\d+$/.test(path) ? (
-          <Assets can={can} id={path.split("/")[2]} />
-        ) : path === "/customers" ? (
-          <Customers can={can} />
-        ) : path === "/settings" ? (
-          <OrganizationSettings shop={shop} onSave={load} />
-        ) : path === "/templates" ? (
-          <TemplateEditor />
-        ) : path === "/workflows" ? (
-          <WorkflowEditor />
-        ) : path === "/team" ? (
-          <Team user={user} />
-        ) : path === "/data" ? (
-          <Transfer />
-        ) : path === "/billing" ? (
-          <Billing />
-        ) : path === "/warehouse" ? (
-          <Warehouse user={user} />
-        ) : path === "/jobs/new" ? (
-          <NewJob can={can} />
-        ) : path === "/orders/new" ? (
-          <NewOrder can={can} />
-        ) : /^\/orders\/[^/]+$/.test(path) ? (
-          <OrderDetail id={path.split("/")[2]} can={can} user={user} />
-        ) : (
-          <Orders can={can} />
-        )}
+        <div className="w-page-content" key={path}>
+          <ErrorBox error={action.error} />
+          {!shop ? (
+            <p>{t("organizationDisabled")}</p>
+          ) : path === "/assets" || /^\/assets\/\d+$/.test(path) ? (
+            <Assets can={can} id={path.split("/")[2]} />
+          ) : path === "/customers" ? (
+            <Customers can={can} />
+          ) : path === "/settings" ? (
+            <OrganizationSettings shop={shop} onSave={load} />
+          ) : path === "/templates" ? (
+            <TemplateEditor />
+          ) : path === "/workflows" ? (
+            <WorkflowEditor />
+          ) : path === "/team" ? (
+            <Team user={user} />
+          ) : path === "/data" ? (
+            <Transfer />
+          ) : path === "/billing" ? (
+            <Billing />
+          ) : path === "/warehouse" ? (
+            <Warehouse user={user} />
+          ) : path === "/jobs/new" ? (
+            <NewJob can={can} />
+          ) : path === "/orders/new" ? (
+            <NewOrder can={can} />
+          ) : /^\/orders\/[^/]+$/.test(path) ? (
+            <OrderDetail id={path.split("/")[2]} can={can} user={user} />
+          ) : (
+            <Orders can={can} />
+          )}
+        </div>
       </main>
     </div>,
   );

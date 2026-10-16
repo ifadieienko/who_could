@@ -6,6 +6,7 @@ from sqlalchemy import select
 from uuid import uuid4
 from app.core.tenancy.records import scoped
 from app.forms.service import normalize_values
+from app.forms.instances import create_instances
 from app.plans import enforce_limit
 from app.repair_access import dt, event, utc, touch
 from app.repair_models import Workshop, Attachment, Customer, Device, FormTemplate, RepairOrder, Workflow, Site
@@ -96,6 +97,7 @@ def create_order_record(s, p, a, *, job_metadata=None):
     s.add(o)
     s.flush()
     o.values = normalize_values(s, o, p.values, a, required=not p.draft)
+    create_instances(s, o)
     if not p.draft:
         freeze_intake(s, o)
     event(s, a, o, "order.created", {"draft": p.draft, **metadata})

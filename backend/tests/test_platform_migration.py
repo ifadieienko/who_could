@@ -25,7 +25,7 @@ for table, cols in json_columns.items():
 fields = [{'key':'note','label':'Finding','type':'text'}]
 stages = [{'key':'received','name':'Received','category':'active','next':['ready']}, {'key':'ready','name':'Ready','category':'ready','next':[]}]
 form = {'id':1,'name':'Original','revision':1,'purpose':'intake','fields':fields,'layout':{'columns':2}}
-stage_forms = {'diagnosis': {'template':{**form,'purpose':'diagnosis'},'values':{'note':'Historical finding'}}}
+stage_forms = {'diagnosis': {'template':{**form,'purpose':'diagnosis'},'values':{'note':'Historical finding'}}, 'measurement': {'template':{**form,'id':999,'revision':4,'purpose':'measurement'},'values':{'note':'Preserved orphan snapshot'}}}
 with engine.begin() as c:
  def add(table, **values): c.execute(m.tables[table].insert().values(**values))
  add('users',id=1,name='Owner',email='v10@example.com',password_hash='preserved-hash',created_at=now)
@@ -57,6 +57,18 @@ with engine.connect() as c:
  assert c.execute(select(Workshop.currency)).scalar_one() == 'PLN'
  assert c.execute(select(RepairOrder.currency)).scalar_one() == 'PLN'
  assert c.execute(select(RepairOrder.vertical_key, RepairOrder.job_type, RepairOrder.priority, RepairOrder.site_id)).one() == ('repair', 'repair', 'normal', None)
+ from app.repair_models import JobFormInstance
+ rows = c.execute(select(JobFormInstance.__table__).order_by(JobFormInstance.slot_key)).mappings().all()
+ assert len(rows) == 2
+ for row in rows:
+  source = stage_forms[row['slot_key']]
+  assert row['schema_snapshot'] == source['template']
+  assert row['values'] == source['values']
+  assert row['form_revision'] == source['template']['revision']
+  assert row['version'] == 1 and row['job_id'] == 1 and row['workshop_id'] == 1
+  assert row['created_at'] == now and row['updated_at'] == now
+ assert rows[0]['form_template_family'] == 'original-form'
+ assert rows[1]['form_template_family'] is None
 command.check(config)
 '''
 

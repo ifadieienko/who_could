@@ -7,6 +7,7 @@ from sqlalchemy import func, or_, select
 from uuid import uuid4
 from app.database import db
 from app.forms.service import form_proxy, normalize_values
+from app.forms.instances import create_instances, edit_instance
 from app.jobs.finance_service import latest_estimate, paid, queue_email
 from app.jobs.serialization import detail, summary
 from app.jobs.service import create_order_record, edit_order_record, freeze_intake
@@ -24,20 +25,7 @@ def edit_stage_form(id: str, phase: FormSlot, p: StageFormEdit, a=Depends(access
     a.require("orders.edit")
     with db() as s:
         o = get_order(s, a, id, p.version)
-        if o.status in {"issued", "cancelled"}:
-            raise HTTPException(409, "Заказ закрыт")
-        form = o.stage_forms.get(phase)
-        if not form:
-            raise HTTPException(404, "Форма не назначена заказу")
-        values = normalize_values(s, form_proxy(o, form), p.values, a)
-        changes = {
-            key: {"before": form["values"].get(key), "after": value}
-            for key, value in values.items()
-            if value != form["values"].get(key)
-        }
-        o.stage_forms = {**o.stage_forms, phase: {**form, "values": values}}
-        touch(o)
-        event(s, a, o, "form.updated", {"phase": phase, "value_changes": changes})
+        edit_instance(s, o, phase, p.values, a)
         return detail(s, o, a)
 
 
@@ -372,6 +360,7 @@ def warranty(id: str, p: Note, a=Depends(access)):
         )
         s.add(o)
         s.flush()
+        create_instances(s, o)
         event(s, a, o, "warranty.created", {"original": old.public_id})
         touch(old)
         event(s, a, old, "warranty.linked", {"order": o.public_id})

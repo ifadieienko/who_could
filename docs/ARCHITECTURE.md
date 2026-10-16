@@ -113,7 +113,22 @@ The existing intake form and lifecycle actions remain available unchanged.
 
 Form purposes now accept lowercase semantic keys (1–20 characters, beginning with a letter), such as `measurement`, `review` and `jewellery_condition`. The existing database columns and repair purposes remain compatible; `intake` retains its dedicated snapshot and cannot be assigned as a stage slot. Published templates can be attached to workflow stages and jobs by purpose, with existing validation, permissions, snapshots and version conflicts preserved. Custom-purpose photos must belong to a form assigned to that job. Form tabs use separate internal identifiers to avoid collisions with names such as `history`.
 
-This is the first part of Form Engine 2: storage still uses the existing `stage_forms` JSON. Separate `JobFormInstance` records, table fields, richer validation and calculations remain to be implemented.
+Stage forms now have `JobFormInstance` rows containing the frozen schema, values,
+family/revision metadata and independent version. Migration 0014 copies each
+historic stage snapshot without rebuilding it from a mutable template. New jobs
+and warranty jobs create instances in the same transaction. Both form write APIs
+use one service and transactionally mirror values to `stage_forms`, retained for
+legacy reads, transition guards, receipts and exports. Instance rows are the
+write authority; do not write stage JSON directly or run old writers after upgrade.
+
+`GET /v2/jobs/{id}/forms` returns stage instances and `job_version` after job-scope
+and field-permission filtering. `PATCH /v2/jobs/{id}/forms/{slot}` accepts
+`job_version`, form `version`, and `values`; it checks both versions under the
+existing job lock. Only value changes increment the form version; unrelated job
+edits do not. The old form endpoint retains its job-version contract and shares
+the same validation, audit and closed-job guards. Organization exports include
+the instance rows. Intake remains on its dedicated snapshot/value path in this
+incremental step. Table fields, richer validation and calculations remain next.
 
 A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.
 

@@ -149,6 +149,22 @@ class Device(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class JobFormInstance(Base):
+    __tablename__ = "job_form_instances"
+    __table_args__ = (UniqueConstraint("job_id", "slot_key", name="uq_job_form_slot"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workshop_id: Mapped[int] = mapped_column(ForeignKey("workshops.id", ondelete="RESTRICT"), index=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("repair_orders.id", ondelete="RESTRICT"))
+    slot_key: Mapped[str] = mapped_column(String(20))
+    form_template_family: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    form_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    schema_snapshot: Mapped[dict] = mapped_column(JSON)
+    values: Mapped[dict] = mapped_column(JSON, default=dict)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
 class RepairOrder(Base):
     __tablename__ = "repair_orders"
     __table_args__ = (UniqueConstraint("workshop_id", "external_id"),)

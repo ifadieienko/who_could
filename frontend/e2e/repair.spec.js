@@ -123,7 +123,7 @@ test("версии формы, сетка и многострочные пров
   await page.getByLabel("Email", { exact: true }).fill("editor@example.com");
   await page.getByLabel("Пароль", { exact: true }).fill("editor-password-123");
   await page.getByRole("button", { name: "Начать работу" }).click();
-  await page.getByRole("button", { name: "Формы", exact: true }).click();
+  await page.getByRole("button", { name: "Forms", exact: true }).click();
   await page.getByLabel("Название формы").fill("Ноутбуки");
   await page.getByLabel("Количество колонок").selectOption("3");
   await page.getByLabel("Название", { exact: true }).fill("Проверка питания");
@@ -140,7 +140,7 @@ test("версии формы, сетка и многострочные пров
   await expect(page.getByLabel("Строка (пусто — автоматически)")).toHaveValue(
     "2",
   );
-  await page.getByRole("button", { name: "Процессы", exact: true }).click();
+  await page.getByRole("button", { name: "Workflows", exact: true }).click();
   const checks = page
     .getByLabel("Обязательные проверки — каждая с новой строки")
     .last();
@@ -254,7 +254,7 @@ test("раздельные формы этапов, обязательность
   await expect(
     page.getByRole("heading", { name: "Выдать устройство" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Подписка", exact: true }).click();
+  await page.getByRole("button", { name: "Subscription", exact: true }).click();
   await expect(
     page.getByText("Тариф: Starter", { exact: false }),
   ).toBeVisible();
@@ -278,15 +278,15 @@ test("organization currency, timezone and settings language persist", async ({
     .fill("organization-browser@example.com");
   await page.getByLabel("Пароль", { exact: true }).fill("browser-password-123");
   await page.getByRole("button", { name: "Начать работу" }).click();
-  await page.getByRole("button", { name: "Организация", exact: true }).click();
+  await page.getByRole("button", { name: "Organization", exact: true }).click();
   await page.getByLabel("Default currency").selectOption("EUR");
   await page.getByLabel("Time zone").fill("Europe/London");
   await page.getByRole("button", { name: "Save settings" }).click();
   await page.reload();
   await expect(page.getByLabel("Default currency")).toHaveValue("EUR");
   await expect(page.getByLabel("Time zone")).toHaveValue("Europe/London");
-  await page.getByLabel("Language").selectOption("pl");
-  await page.getByRole("button", { name: "Zapisz ustawienia" }).click();
+  await page.getByLabel("Default organization language").selectOption("pl");
+  await page.getByRole("button", { name: "Save settings" }).click();
   await page.reload();
   await expect(page.getByLabel("Waluta domyślna")).toHaveValue("EUR");
 });

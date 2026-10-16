@@ -13,14 +13,14 @@ from app.jobs.service import create_order_record, edit_order_record, freeze_inta
 from app.plans import enforce_limit
 from app.repair_access import access, dt, event, get_order, order_filters, touch, utc
 from app.repair_models import Device, Membership, RepairOrder
-from app.repair_schemas import Assignment, FormPhase, Issue, Note, OrderEdit, OrderInput, Reopen, StageFormEdit, Transition, Version
+from app.repair_schemas import Assignment, FormSlot, Issue, Note, OrderEdit, OrderInput, Reopen, StageFormEdit, Transition, Version
 from app.workflows.service import stage_of
 
 router = APIRouter()
 
 
 @router.patch("/orders/{id}/forms/{phase}")
-def edit_stage_form(id: str, phase: FormPhase, p: StageFormEdit, a=Depends(access)):
+def edit_stage_form(id: str, phase: FormSlot, p: StageFormEdit, a=Depends(access)):
     a.require("orders.edit")
     with db() as s:
         o = get_order(s, a, id, p.version)

@@ -18,6 +18,8 @@ import { useEffect, useState } from "react";
 import "./workshop.css";
 import { Assets } from "./features/assets/Assets.jsx";
 import { Customers } from "./features/customers/Customers.jsx";
+import { LanguageSwitcher } from "./app/LanguageSwitcher.jsx";
+import { readLocalePreference, saveLocalePreference } from "./app/i18n.js";
 import { t, setLocale } from "./app/i18n.js";
 import { configureOrganization } from "./app/format.js";
 import { OrganizationSettings } from "./features/organizations/Settings.jsx";
@@ -28,6 +30,26 @@ export default function WorkshopApp() {
     [selected, setSelected] = useState(getWorkshop());
   const [path, setPath] = useState(window.location.pathname),
     [loading, setLoading] = useState(true);
+  const [preference, setPreference] = useState(readLocalePreference);
+  const shop = shops.find((x) => x.id === selected);
+  const locale = preference || (user && shop?.locale) || "ru";
+  setLocale(locale);
+  if (shop) configureOrganization({ ...shop, locale });
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+  const frame = (content) => (
+    <>
+      <LanguageSwitcher
+        locale={locale}
+        onChange={(value) => {
+          saveLocalePreference(value);
+          setPreference(value);
+        }}
+      />
+      {content}
+    </>
+  );
   const action = useAction();
   const load = async () => {
     try {
@@ -61,26 +83,21 @@ export default function WorkshopApp() {
     };
   }, []);
   if (path.startsWith("/quote/"))
-    return <QuotePortal token={path.split("/")[2]} />;
+    return frame(<QuotePortal token={path.split("/")[2]} />);
   if (path.startsWith("/reset/"))
-    return <ResetPassword token={path.split("/")[2]} />;
-  if (loading) return <div className="w-loading">Загрузка мастерской…</div>;
-  if (!user) return <Auth onLogin={load} />;
-  const shop = shops.find((x) => x.id === selected),
-    can = (p) => shop?.permissions.includes(p);
-  if (shop) {
-    configureOrganization(shop);
-    setLocale(shop.locale);
-  }
+    return frame(<ResetPassword token={path.split("/")[2]} />);
+  if (loading) return frame(<div className="w-loading">{t("loading")}</div>);
+  if (!user) return frame(<Auth onLogin={load} />);
+  const can = (p) => shop?.permissions.includes(p);
   const nav = [
-    ["/orders", "Заказы", "orders.read"],
-    ["/templates", "Формы", "forms.manage"],
-    ["/workflows", "Процессы", "workflows.manage"],
-    ["/warehouse", "Склад", "warehouse.manage"],
-    ["/team", "Команда", "members.manage"],
-    ["/data", "Перенос данных", "data.export"],
-    ["/billing", "Подписка", "billing.manage"],
-    ["/settings", "Организация", "organization.manage"],
+    ["/orders", t("navJobs"), "orders.read"],
+    ["/templates", t("navForms"), "forms.manage"],
+    ["/workflows", t("navWorkflows"), "workflows.manage"],
+    ["/warehouse", t("navWarehouse"), "warehouse.manage"],
+    ["/team", t("navTeam"), "members.manage"],
+    ["/data", t("navData"), "data.export"],
+    ["/billing", t("navBilling"), "billing.manage"],
+    ["/settings", t("organization"), "organization.manage"],
     ["/assets", t("assets"), "assets.read"],
     ["/customers", t("customers"), "customers.read"],
   ].filter((x) => can(x[2]));
@@ -89,17 +106,17 @@ export default function WorkshopApp() {
       await call("/auth/logout", { method: "POST" });
       setUser(null);
     });
-  return (
+  return frame(
     <div className="w-app">
       <aside className="w-sidebar">
         <div className="w-brand">
           W
           <span>
-            Who Could<small>Рабочее место мастерской</small>
+            Who Could<small>{t("workspace")}</small>
           </span>
         </div>
         <select
-          aria-label="Мастерская"
+          aria-label={t("organization")}
           value={selected || ""}
           onChange={(e) => {
             setWorkshop(e.target.value);
@@ -128,14 +145,14 @@ export default function WorkshopApp() {
           <strong>{user.name}</strong>
           <small>{user.email}</small>
           <Button secondary onClick={logout}>
-            Выйти
+            {t("logout")}
           </Button>
         </div>
       </aside>
       <main className="w-main" key={selected}>
         <ErrorBox error={action.error} />
         {!shop ? (
-          <p>Доступ к мастерской отключён. Обратитесь к владельцу.</p>
+          <p>{t("organizationDisabled")}</p>
         ) : path === "/assets" || /^\/assets\/\d+$/.test(path) ? (
           <Assets can={can} id={path.split("/")[2]} />
         ) : path === "/customers" ? (
@@ -164,6 +181,6 @@ export default function WorkshopApp() {
           <Orders can={can} />
         )}
       </main>
-    </div>
+    </div>,
   );
 }

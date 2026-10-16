@@ -111,11 +111,26 @@ export function NewOrder() {
         </div>
         <div className="w-grid three">
           {[
-            ["diagnosis", "Форма диагностики"],
-            ["repair", "Форма ремонта"],
-            ["quality", "Форма проверки"],
-          ].map(([phase, title]) => (
-            <Field key={phase} label={title}>
+            ...new Set([
+              "diagnosis",
+              "repair",
+              "quality",
+              ...(flows
+                .find((w) => w.id === Number(form.workflow_id))
+                ?.stages.map((s) => s.form_phase)
+                .filter(Boolean) || []),
+            ]),
+          ].map((phase) => (
+            <Field
+              key={phase}
+              label={
+                {
+                  diagnosis: "Форма диагностики",
+                  repair: "Форма ремонта",
+                  quality: "Форма проверки",
+                }[phase] || phase
+              }
+            >
               <select
                 value={form.stage_forms[phase] || ""}
                 onChange={(e) => {

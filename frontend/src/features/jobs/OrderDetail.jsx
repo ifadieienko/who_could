@@ -27,6 +27,7 @@ export function OrderDetail({ id, can, user }) {
     [reason, setReason] = useState(""),
     [phase, setPhase] = useState("repair"),
     [tab, setTab] = useState("work");
+  const formPhase = tab.startsWith("form:") ? tab.slice(5) : null;
   const a = useAction();
   const put = (data) => {
     setOrder(data);
@@ -213,7 +214,7 @@ export function OrderDetail({ id, can, user }) {
         {[
           ["work", "Карточка"],
           ...Object.entries(o.stage_forms || {}).map(([phase, form]) => [
-            phase,
+            "form:" + phase,
             form.template.name,
           ]),
           ["photos", "Фотографии"],
@@ -434,11 +435,11 @@ export function OrderDetail({ id, can, user }) {
           </aside>
         </div>
       )}
-      {o.stage_forms?.[tab] && (
+      {formPhase !== null && o.stage_forms?.[formPhase] && (
         <section className="w-panel">
           <h2>
-            {o.stage_forms[tab].template.name} · v
-            {o.stage_forms[tab].template.revision}
+            {o.stage_forms[formPhase].template.name} · v
+            {o.stage_forms[formPhase].template.revision}
           </h2>
           <p className="w-muted">
             Обязательные поля проверяются при выходе с этапа, к которому
@@ -446,12 +447,13 @@ export function OrderDetail({ id, can, user }) {
           </p>
           <fieldset disabled={!editable || !can("orders.edit") || a.busy}>
             <DynamicFields
-              template={o.stage_forms[tab].template}
-              values={stageValues[tab] || {}}
+              template={o.stage_forms[formPhase].template}
+              values={stageValues[formPhase] || {}}
               setValues={(v) =>
                 setStageValues((previous) => ({
                   ...previous,
-                  [tab]: typeof v === "function" ? v(previous[tab]) : v,
+                  [formPhase]:
+                    typeof v === "function" ? v(previous[formPhase]) : v,
                 }))
               }
               can={can}
@@ -462,7 +464,11 @@ export function OrderDetail({ id, can, user }) {
             <Button
               disabled={a.busy}
               onClick={() =>
-                mutate("/forms/" + tab, { values: stageValues[tab] }, "PATCH")
+                mutate(
+                  "/forms/" + formPhase,
+                  { values: stageValues[formPhase] },
+                  "PATCH",
+                )
               }
             >
               Сохранить форму
@@ -486,6 +492,16 @@ export function OrderDetail({ id, can, user }) {
                 <option value="diagnosis">Диагностика</option>
                 <option value="repair">Ремонт</option>
                 <option value="quality">Финальная проверка</option>
+                {Object.entries(o.stage_forms || {})
+                  .filter(
+                    ([key]) =>
+                      !["diagnosis", "repair", "quality"].includes(key),
+                  )
+                  .map(([key, form]) => (
+                    <option key={key} value={key}>
+                      {form.template.name}
+                    </option>
+                  ))}
               </select>
               <input
                 aria-label="Добавить фотографию"

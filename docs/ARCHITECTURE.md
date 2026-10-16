@@ -107,3 +107,12 @@ settings panel. Save uses the generic API with its loaded version; conflicts are
 shown without overwriting server changes. Reloading the order refreshes settings.
 Closed/read-only orders disable controls. New text has EN/PL/RU translations.
 The existing intake form and lifecycle actions remain available unchanged.
+
+
+### Form purposes and interface language
+
+Form purposes now accept lowercase semantic keys (1–20 characters, beginning with a letter), such as `measurement`, `review` and `jewellery_condition`. The existing database columns and repair purposes remain compatible; `intake` retains its dedicated snapshot and cannot be assigned as a stage slot. Published templates can be attached to workflow stages and jobs by purpose, with existing validation, permissions, snapshots and version conflicts preserved. Custom-purpose photos must belong to a form assigned to that job. Form tabs use separate internal identifiers to avoid collisions with names such as `history`.
+
+This is the first part of Form Engine 2: storage still uses the existing `stage_forms` JSON. Separate `JobFormInstance` records, table fields, richer validation and calculations remain to be implemented.
+
+A persistent top-right language selector is available on every application route, including authentication, password reset and the public quote page. The personal browser choice takes precedence over the organization's default without changing other members' preferences. Switching does not remount the active page or discard drafts. Navigation, authentication and platform screens use the selected dictionary; legacy repair screens and server messages still contain untranslated text. Organization currency and time zone remain independent of the selected interface language.

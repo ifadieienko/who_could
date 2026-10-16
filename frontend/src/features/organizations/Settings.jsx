@@ -23,7 +23,7 @@ export function OrganizationSettings({ shop, onSave }) {
     ),
   );
   const action = useAction(),
-    tr = (key) => t(key, form.locale);
+    tr = t;
   const field = (key) => ({
     value: form[key],
     onChange: (e) => setForm({ ...form, [key]: e.target.value }),
@@ -48,7 +48,7 @@ export function OrganizationSettings({ shop, onSave }) {
       <Field label={tr("name")}>
         <input required maxLength={160} {...field("name")} />
       </Field>
-      <Field label={tr("locale")}>
+      <Field label={tr("defaultLocale")}>
         <select {...field("locale")}>
           <option value="en">English</option>
           <option value="pl">Polski</option>

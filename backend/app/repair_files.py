@@ -57,8 +57,6 @@ def upload(
     a=Depends(access),
 ):
     a.require("orders.edit")
-    if phase not in {"intake", "diagnosis", "repair", "quality"}:
-        raise HTTPException(422, "Недопустимый этап фотографии")
     raw = file.file.read(10 * 1024 * 1024 + 1)
     if len(raw) > 10 * 1024 * 1024:
         raise HTTPException(413, "Изображение должно быть не больше 10 МБ")
@@ -69,6 +67,8 @@ def upload(
     try:
         with db() as s:
             o = get_order(s, a, id, version)
+            if phase not in {"intake", "diagnosis", "repair", "quality"} | set(o.stage_forms):
+                raise HTTPException(422, "Недопустимый этап фотографии")
             if o.status in {"issued", "cancelled"}:
                 raise HTTPException(409, "Заказ закрыт")
             if phase == "intake" and o.status != "draft":

@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Annotated
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -45,11 +46,21 @@ class FieldSpec(Strict):
         return self
 
 
-FormPhase = Literal["diagnosis", "repair", "quality"]
+# Keep the existing database width; semantic purposes are no longer an enum.
+FormPurpose = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,19}$")]
+
+
+def stage_purpose(value):
+    if value == "intake":
+        raise ValueError("Intake uses the dedicated intake form")
+    return value
+
+
+FormSlot = Annotated[FormPurpose, AfterValidator(stage_purpose)]
 
 
 class TemplateInput(Strict):
-    purpose: Literal["intake", "diagnosis", "repair", "quality"] = "intake"
+    purpose: FormPurpose = "intake"
     name: str = Field(min_length=1, max_length=160)
     fields: list[FieldSpec] = Field(max_length=100)
     columns: int = Field(default=2, ge=1, le=3)
@@ -75,7 +86,7 @@ class TemplateInput(Strict):
 
 
 class StageSpec(Strict):
-    form_phase: FormPhase | None = None
+    form_phase: FormSlot | None = None
     key: str = Field(pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
     name: str = Field(min_length=1, max_length=120)
     category: Literal["active", "waiting", "ready"] = "active"
@@ -125,7 +136,7 @@ class CustomerInput(Strict):
 
 
 class OrderInput(Strict):
-    stage_forms: dict[FormPhase, int] = Field(default_factory=dict)
+    stage_forms: dict[FormSlot, int] = Field(default_factory=dict)
     template_id: int
     workflow_id: int
     customer_id: int | None = None

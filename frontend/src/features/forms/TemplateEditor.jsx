@@ -120,15 +120,30 @@ export function TemplateEditor() {
                   />
                 </Field>
                 <Field label="Назначение формы">
-                  <select
+                  <input
+                    required
+                    list="form-purposes"
+                    pattern="[a-z][a-z0-9_]{0,19}"
+                    maxLength={20}
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                  >
+                  />
+                  <datalist id="form-purposes">
                     <option value="intake">Приём</option>
                     <option value="diagnosis">Диагностика</option>
                     <option value="repair">Ремонт</option>
                     <option value="quality">Проверка качества</option>
-                  </select>
+                    <option value="measurement">Измерения</option>
+                    <option value="review">Проверка результатов</option>
+                    <option value="jewellery_condition">
+                      Состояние изделия
+                    </option>
+                  </datalist>
+                  <small>
+                    Назначение связывает форму с этапом процесса. Можно выбрать
+                    готовое или ввести своё: латинские строчные буквы, цифры и
+                    подчёркивание, до 20 символов.
+                  </small>
                 </Field>
                 <Field label="Количество колонок">
                   <select

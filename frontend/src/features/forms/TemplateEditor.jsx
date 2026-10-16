@@ -5,6 +5,8 @@ import {
   Field,
   useAction,
 } from "../../components/workshop/ui.jsx";
+import { TableColumnsEditor, newColumn } from "./TableColumnsEditor.jsx";
+import { t } from "../../app/i18n.js";
 import { DynamicFields } from "./DynamicFields.jsx";
 import { call } from "../../repair-api.js";
 import { empty, label, perms, types } from "./editor-options.js";
@@ -20,6 +22,7 @@ export function TemplateEditor() {
     [preview, setPreview] = useState({});
   const a = useAction();
   const choose = (t) => {
+    setPreview({});
     setActive(t);
     setName(t.name);
     setColumns(t.columns);
@@ -189,11 +192,18 @@ export function TemplateEditor() {
                     <Field label="Тип">
                       <SelectControl
                         value={f.type}
-                        onChange={(e) => change(i, { type: e.target.value })}
+                        onChange={(e) => {
+                          setPreview({});
+                          change(i, {
+                            type: e.target.value,
+                            columns:
+                              e.target.value === "table" ? [newColumn()] : [],
+                          });
+                        }}
                       >
                         {Object.entries(types).map(([k, v]) => (
                           <option key={k} value={k}>
-                            {v}
+                            {k === "table" ? t("tableType") : v}
                           </option>
                         ))}
                       </SelectControl>
@@ -238,6 +248,12 @@ export function TemplateEditor() {
                       Обязательно при приёме
                     </label>
                   </div>
+                  {f.type === "table" && (
+                    <TableColumnsEditor
+                      field={f}
+                      onChange={(patch) => change(i, patch)}
+                    />
+                  )}
                   {f.type === "select" && (
                     <Field label="Варианты — каждый с новой строки">
                       <textarea

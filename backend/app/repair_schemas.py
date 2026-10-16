@@ -16,12 +16,37 @@ class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+class TableColumn(Strict):
+    key: str = Field(pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
+    label: str = Field(min_length=1, max_length=120)
+    type: Literal["string", "text", "number", "date", "select", "checkbox"] = "string"
+    required: bool = False
+    options: list[str] = Field(default_factory=list, max_length=100)
+    unit: str = Field(default="", max_length=24)
+    min: float | None = Field(default=None, allow_inf_nan=False)
+    max: float | None = Field(default=None, allow_inf_nan=False)
+    precision: int | None = Field(default=None, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def valid(self):
+        if self.type == "select" and (not self.options or any(not x for x in self.options) or len(set(self.options)) != len(self.options)):
+            raise ValueError("Select columns need distinct nonempty options")
+        if self.type != "number" and any(x is not None for x in (self.min, self.max, self.precision)):
+            raise ValueError("Numeric constraints require a number column")
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("Minimum cannot exceed maximum")
+        return self
+
+
 class FieldSpec(Strict):
     key: str = Field(pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
     label: str = Field(min_length=1, max_length=120)
-    type: Literal["string", "text", "number", "date", "image", "select", "checkbox"] = (
+    type: Literal["string", "text", "number", "date", "image", "select", "checkbox", "table"] = (
         "string"
     )
+    columns: list[TableColumn] = Field(default_factory=list, max_length=12)
+    min_rows: int = Field(default=0, ge=0, le=100)
+    max_rows: int = Field(default=100, ge=1, le=100)
     section: str = Field(default="Приём", max_length=80)
     width: int = Field(default=1, ge=1, le=3)
     row: int | None = Field(default=None, ge=1, le=100)
@@ -33,6 +58,14 @@ class FieldSpec(Strict):
 
     @model_validator(mode="after")
     def valid(self):
+        if self.type == "table":
+            keys = [c.key for c in self.columns]
+            if not keys or len(keys) != len(set(keys)):
+                raise ValueError("Tables need distinct column keys")
+            if self.min_rows > self.max_rows:
+                raise ValueError("Minimum rows cannot exceed maximum rows")
+        elif self.columns:
+            raise ValueError("Columns are only supported for tables")
         for p in [self.read_permission, self.write_permission]:
             if p and p not in PERMISSIONS:
                 raise ValueError("Unknown permission")
